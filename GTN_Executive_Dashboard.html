@@ -1,0 +1,3586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Homzmart - GTN & Delivery Rate Executive Dashboard</title>
+<link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+<style>
+  :root{
+    --navy:#0B1F3A;--navy-2:#13294B;--ink:#0E1A2B;--text:#1A2840;--muted:#64748B;
+    --bg:#F4F6FA;--card:#FFFFFF;--accent:#1F6FEB;--accent-2:#0E76A8;
+    --good:#16A34A;--warn:#D97706;--bad:#DC2626;--gold:#C99A2E;
+    --line:#E2E8F0;--soft:#F8FAFC;
+    --short:#22C55E;--mid:#F59E0B;--long:#8B5CF6;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;padding:0;background:var(--bg);font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:var(--text);line-height:1.5;overscroll-behavior-y:none}
+  .container{max-width:1480px;margin:0 auto;padding:24px}
+  .hero{background:linear-gradient(135deg,#0B1F3A 0%,#13294B 50%,#1B365D 100%);color:#fff;border-radius:16px;padding:32px;margin-bottom:24px;box-shadow:0 8px 24px rgba(11,31,58,.18);position:relative;overflow:hidden;contain:layout paint}
+  .hero-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px}
+  .hero h1{margin:0 0 4px 0;font-size:26px;font-weight:700;letter-spacing:-0.3px}
+  .hero .sub{color:#94A3B8;font-size:14px}
+  .pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#E2E8F0;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:500}
+  .kpi-row{display:grid;grid-template-columns:repeat(8,1fr);gap:12px;margin-top:24px}
+  .kpi{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:16px}
+  .kpi .label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#94A3B8;font-weight:600}
+  .kpi .value{font-size:28px;font-weight:700;margin-top:4px;letter-spacing:-0.5px}
+  .kpi .sub{font-size:11px;color:#CBD5E1;margin-top:2px}
+  .kpi .value.danger{color:#FCA5A5}.kpi .value.warn{color:#FCD34D}.kpi .value.ok{color:#86EFAC}
+  .grid{display:grid;gap:16px;margin-bottom:16px}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:1fr 1fr 1fr}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;contain:layout style}
+  .card h3{margin:0 0 4px 0;font-size:15px;font-weight:700;color:var(--ink)}
+  .card .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .chart-host{position:relative;height:240px;width:100%}
+  .chart-host.tall{height:280px}
+  .chart-host canvas{max-height:100%}
+  .nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:12px;position:sticky;top:8px;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .nav a{text-decoration:none;color:var(--muted);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;transition:background .15s,color .15s}
+  .nav a:hover{background:var(--soft);color:var(--ink)}
+  .nav a.active{background:var(--navy);color:#fff}
+  .section-title{display:flex;align-items:center;justify-content:space-between;margin:8px 0 12px;padding-top:10px}
+  .section-title h2{margin:0;font-size:18px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:10px}
+  .section-title h2::before{content:"";width:4px;height:20px;background:var(--accent);border-radius:2px}
+  .section-title .meta{font-size:12px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;padding:8px 10px;font-weight:600;color:var(--muted);background:var(--soft);border-bottom:2px solid var(--line);text-transform:uppercase;font-size:10.5px;letter-spacing:.4px}
+  td{padding:8px 10px;border-bottom:1px solid var(--line)}
+  tr:hover td{background:var(--soft)}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10.5px;font-weight:600}
+  .b-good{background:#DCFCE7;color:#15803D}.b-warn{background:#FEF3C7;color:#B45309}
+  .b-bad{background:#FEE2E2;color:#B91C1C}.b-info{background:#DBEAFE;color:#1D4ED8}
+  .funnel-row{display:grid;grid-template-columns:140px 1fr 130px;gap:10px;align-items:center;font-size:12px;margin:4px 0}
+  .funnel-row .stage{font-weight:600;color:var(--ink)}
+  .funnel-bar{height:30px;background:linear-gradient(90deg,#1F6FEB,#0E76A8);border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;color:#fff;font-weight:600;font-size:11.5px}
+  .funnel-row .drop{color:var(--bad);font-weight:600;font-size:11.5px;text-align:right}
+  .action-card{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:8px;background:#fff}
+  .action-card.short{border-left:4px solid var(--short)}
+  .action-card.mid{border-left:4px solid var(--mid)}
+  .action-card.long{border-left:4px solid var(--long)}
+  .action-head{display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:6px}
+  .action-id{font-weight:700;color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .action-title{font-weight:700;font-size:13.5px;color:var(--ink);flex:1}
+  .action-detail{font-size:12px;color:var(--text);margin:6px 0 8px;line-height:1.5}
+  .action-meta{display:flex;gap:6px;flex-wrap:wrap}
+  .action-meta span{background:var(--soft);border:1px solid var(--line);padding:3px 8px;border-radius:6px;font-size:10.5px;color:var(--text)}
+  .talking-points{background:linear-gradient(135deg,#FFF8E5,#FEF3C7);border:1px solid #FCD34D;border-radius:12px;padding:18px;margin-bottom:16px}
+  .talking-points h3{color:#92400E;margin:0 0 8px 0;font-size:14px;font-weight:700}
+  .talking-points ol{margin:0;padding-left:22px;font-size:13px;color:#451A03}
+  .talking-points li{margin-bottom:6px}
+  .root-cause{display:flex;gap:12px;padding:12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;margin-bottom:8px;align-items:flex-start}
+  .root-cause .num-tag{width:28px;height:28px;border-radius:50%;background:var(--bad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+  .root-cause .body{flex:1}
+  .root-cause .title{font-weight:700;color:var(--ink);font-size:13px;margin-bottom:2px}
+  .root-cause .mech{font-size:12px;color:var(--muted)}
+  .root-cause .impact{text-align:right;font-size:11px}
+  .root-cause .impact .v{font-weight:700;color:var(--bad);font-size:13px}
+  .uplift{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border:1px solid #6EE7B7;border-radius:12px;padding:18px;margin-bottom:16px}
+  .uplift h3{margin:0 0 4px 0;color:#065F46;font-size:15px}
+  .uplift-total{display:flex;justify-content:space-between;padding:10px 14px;background:#fff;border-radius:8px;margin-top:10px;align-items:center}
+  .uplift-total .lbl{font-weight:600;color:#065F46}
+  .uplift-total .val{font-size:22px;font-weight:700;color:var(--good)}
+  .footer{text-align:center;color:var(--muted);font-size:12px;padding:24px;border-top:1px solid var(--line);margin-top:32px}
+  .instr-box{background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:#1E3A8A}
+  .seg-card{padding:14px;border-radius:10px;border:1px solid var(--line);background:#fff}
+  .seg-card.overload{background:linear-gradient(135deg,#FEE2E2,#FFFFFF);border-color:#FCA5A5}
+  .seg-card.under{background:linear-gradient(135deg,#FEF3C7,#FFFFFF);border-color:#FCD34D}
+  .seg-card.strong{background:linear-gradient(135deg,#DCFCE7,#FFFFFF);border-color:#86EFAC}
+  .seg-card.balanced{background:linear-gradient(135deg,#E0E7FF,#FFFFFF);border-color:#A5B4FC}
+  .seg-card.risk{background:linear-gradient(135deg,#FFE4E6,#FFFFFF);border-color:#FDA4AF}
+  .seg-card .num{font-size:28px;font-weight:700;color:var(--ink);text-align:left}
+  .seg-card .lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:4px}
+  .stat-line{display:flex;justify-content:space-between;font-size:12px;margin:4px 0;color:var(--text)}
+  .small{font-size:11.5px;color:var(--muted)}
+  .skel{background:linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%);background-size:200% 100%;animation:sh 1.4s infinite;height:100%;border-radius:6px}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .err{padding:12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;color:#991B1B;font-size:12px}
+  @media print{body{background:#fff}.nav{display:none}.card{break-inside:avoid;border:1px solid #ccc}.hero{background:#0B1F3A !important;-webkit-print-color-adjust:exact;color-adjust:exact}}
+  @media (max-width:1300px){.kpi-row{grid-template-columns:repeat(4,1fr)}}@media (max-width:1100px){.kpi-row{grid-template-columns:repeat(3,1fr)}.grid-3,.grid-4{grid-template-columns:1fr 1fr}}
+  @media (max-width:680px){.kpi-row,.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<noscript><div style="padding:40px;text-align:center"><h1>JavaScript required</h1><p>This dashboard needs JavaScript enabled to render charts and tables.</p></div></noscript>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <span class="pill">VENDOR OPERATIONS</span>
+          <span class="pill">EXECUTIVE BRIEFING</span>
+          <span class="pill">C-LEVEL</span>
+        </div>
+        <h1>GTN &amp; Delivery Rate Performance Review</h1>
+        <div class="sub">Period: <strong style="color:#fff">August 2025 - March 2026</strong> &nbsp;|&nbsp; Modules: MDS / OCF / FDS &nbsp;|&nbsp; Owner: Ibrahem Emam, Head of Vendor Operations</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:#94A3B8">Prepared</div>
+        <div style="font-size:14px;font-weight:600">04 May 2026</div>
+      </div>
+    </div>
+    <div class="kpi-row" id="kpiRow"></div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav" id="topNav">
+    <a href="#sec-exec" class="active">Executive Summary</a>
+    <a href="#sec-trends">MoM Trends</a>
+    <a href="#sec-funnel">Funnel</a>
+    <a href="#sec-modules">Modules</a>
+    <a href="#sec-sla">SLA</a>
+    <a href="#sec-loss">Loss Drivers</a>
+    <a href="#sec-region">Region &amp; Payment</a>
+    <a href="#sec-sellers">Sellers &amp; Capacity</a>
+    <a href="#sec-material">Material GTN</a>
+    <a href="#sec-sku">SKU GTN</a>
+    <a href="#sec-skusla">SKU SLA</a>
+    <a href="#sec-actions">Action Plan</a>
+    <a href="#sec-guide">Discussion Guide</a>
+  </div>
+
+  <div id="sec-exec"></div>
+  <div class="instr-box">
+    <strong>How to use this dashboard.</strong> Read top-to-bottom: (1) Executive KPIs and Top Root Causes, (2) MoM Trends to spot trajectory, (3) Module / SLA / Loss to localize the problem, (4) Action Plan for response, (5) Discussion Guide for the C-level meeting. Each section has a one-line takeaway in italics. All numbers from 128,496 order items - no assumptions.
+  </div>
+
+  <div class="talking-points">
+    <h3>Executive takeaway (open the meeting with this)</h3>
+    <ol>
+      <li><strong>We are losing ~28% of GMV between order and delivery</strong> - EGP 250M over 8 months.</li>
+      <li><strong>The biggest lever is post-closure logistics, not seller performance.</strong> Sellers reach module closure on 80% of GMV (Seller GTN 80.08%) but only 71.56% reaches the customer. The 8.5pp gap = EGP ~75M lost AFTER the seller does their job. OCF gap is 17.5pp; MDS 12.8pp.</li>
+      <li><strong>OCF sellers are the strongest performers</strong> (Seller GTN 86.6%) but OCF logistics is the leak. Fixing OCF last-mile is the highest-ROI single move.</li>
+      <li><strong>~60 sellers are overloaded; ~17 strong sellers are starved of volume.</strong> Rebalance is no-cost.</li>
+      <li><strong>Tier sellers on Seller GTN going forward</strong> (not Overall GTN) - they shouldn't be punished for logistics issues.</li>
+      <li><strong>Estimated combined uplift: +6-8 pp Overall GTN within 2 quarters</strong> (~EGP 70M/year recovered run-rate).</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>Top Root Causes of GTN Loss</h3>
+    <div class="sub">Ranked by GMV impact - mechanism, owner, and estimated loss</div>
+    <div id="rootCauses"></div>
+  </div>
+
+  <div class="section-title" id="sec-trends"><h2>MoM Trends - GTN, Delivery Rate, SLA</h2><div class="meta"><em>Takeaway: GTN oscillates 68-75% with no structural lift; SLA stuck below 80%.</em></div></div>
+  <div class="grid grid-2">
+    <div class="card"><h3>GTN % - Monthly</h3><div class="sub">Trend across 8 months</div><div class="chart-host" data-chart="chGTN"><div class="skel"></div></div></div>
+    <div class="card"><h3>Delivery Rate % - Monthly</h3><div class="sub">Items delivered / items placed</div><div class="chart-host" data-chart="chDR"><div class="skel"></div></div></div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card"><h3>SLA Compliance % - Monthly</h3><div class="sub">% of evaluable items closed within Seller Expected Delivery Date</div><div class="chart-host" data-chart="chSLA"><div class="skel"></div></div></div>
+    <div class="card"><h3>Cancel / Reject / Return Rate (% of items)</h3><div class="sub">Stacked monthly loss profile</div><div class="chart-host" data-chart="chLoss"><div class="skel"></div></div></div>
+  </div>
+
+  <div class="section-title" id="sec-funnel"><h2>Order Lifecycle Funnel</h2><div class="meta"><em>Takeaway: drop-offs concentrated post-Confirmation - vendor-side problem.</em></div></div>
+  <div class="grid grid-2">
+    <div class="card"><h3>Overall Funnel</h3><div class="sub">% of placed items reaching each stage</div><div id="funnelOverall"></div></div>
+    <div class="card"><h3>Funnel by Module</h3><div class="sub">% reaching each stage by module</div><div class="chart-host tall" data-chart="chModFunnel"><div class="skel"></div></div></div>
+  </div>
+
+  <div class="section-title" id="sec-modules"><h2>Module Comparison - MDS / OCF / FDS</h2><div class="meta"><em>Takeaway: OCF leads SLA; FDS leads volume but trails on Lead Time.</em></div></div>
+  <div class="grid grid-3">
+    <div class="card"><h3>GTN by Module</h3><div class="chart-host" data-chart="chModGTN"><div class="skel"></div></div></div>
+    <div class="card"><h3>SLA Compliance by Module</h3><div class="chart-host" data-chart="chModSLA"><div class="skel"></div></div></div>
+    <div class="card"><h3>Avg Seller Lead Time (days)</h3><div class="chart-host" data-chart="chModLT"><div class="skel"></div></div></div>
+  </div>
+  <div class="card"><h3>Module KPI Detail</h3><table id="modTable"></table></div>
+
+  <div class="section-title" id="sec-sla"><h2>SLA Impact on GTN, Cancellations, Returns</h2><div class="meta"><em>Takeaway: Breached items have lower GTN and higher cancel/return rates.</em></div></div>
+  <div class="grid grid-2">
+    <div class="card"><h3>SLA Status vs GTN &amp; Loss Rates</h3><div class="sub">Compliant orders convert dramatically better.</div><div class="chart-host tall" data-chart="chSLAImpact"><div class="skel"></div></div></div>
+    <div class="card"><h3>SLA Compliance by Module</h3><table id="slaModTable"></table></div>
+  </div>
+
+  <div class="section-title" id="sec-loss"><h2>GMV Loss Drivers - Reason Pareto</h2><div class="meta"><em>Takeaway: One reason dominates each loss type. Fix the top reason = fix half the bucket.</em></div></div>
+  <div class="grid grid-3">
+    <div class="card"><h3>Top Cancellation Reasons</h3><div class="sub">By GMV lost</div><div class="chart-host tall" data-chart="chCancel"><div class="skel"></div></div></div>
+    <div class="card"><h3>Top Rejection Reasons</h3><div class="sub">By GMV lost</div><div class="chart-host tall" data-chart="chReject"><div class="skel"></div></div></div>
+    <div class="card"><h3>Top Return Reasons</h3><div class="sub">By GMV lost</div><div class="chart-host tall" data-chart="chReturn"><div class="skel"></div></div></div>
+  </div>
+
+  <div class="section-title" id="sec-region"><h2>Region &amp; Payment Method</h2><div class="meta"><em>Takeaway: Cash carries higher cancel risk; specific regions trail GTN by 5+ pp.</em></div></div>
+  <div class="grid grid-2">
+    <div class="card"><h3>GTN by Region</h3><div class="sub">Sorted by GMV; red = below overall GTN</div><div id="regionList"></div></div>
+    <div class="card"><h3>Cash vs Prepaid - Performance</h3><table id="payTable"></table>
+      <div class="instr-box" style="margin-top:12px"><strong>Risk:</strong> Cash GTN runs materially below Prepaid - structural shift toward Prepaid is a free GTN lever (Action S6).</div>
+    </div>
+  </div>
+
+  <div class="section-title" id="sec-sellers"><h2>Sellers &amp; Capacity Allocation</h2><div class="meta"><em>Two GTN views shown side-by-side: <strong style="color:var(--accent)">Seller GTN</strong> (responsibility ends at module closure: MDS=DC/Shipped, OCF=RTS, FDS=Delivered) vs <strong style="color:var(--ink)">Overall GTN</strong> (Status=Delivered, end-to-end). Gap = post-closure logistics/return loss.</em></div></div>
+  <div class="instr-box" style="background:#F0F9FF;border-color:#7DD3FC;border-left-color:var(--accent);margin-bottom:12px"><strong>How to read the two views:</strong> A high <em>Seller GTN</em> with low <em>Overall GTN</em> = seller did their part, leak is downstream (logistics, returns). High both = good end-to-end. Low both = seller-side problem.</div>
+  <div class="grid grid-3" id="capSegments"></div>
+  <div class="grid grid-2">
+    <div class="card"><h3>Overloaded Sellers (top 10)</h3><div class="sub">High volume + sub-median SLA - cap or audit</div><table id="overloadTable"></table></div>
+    <div class="card"><h3>Underutilized Strong Sellers (top 10)</h3><div class="sub">Low volume + high GTN/SLA - allocate more SKUs</div><table id="underutilTable"></table></div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card"><h3>Top 15 Sellers by GMV</h3><table id="topSellersTable"></table></div>
+    <div class="card"><h3>15 Worst Sellers by GTN (>=100 items)</h3><div class="sub">Performance-management priority list</div><table id="worstSellersTable"></table></div>
+  </div>
+
+  
+  <div class="section-title" id="sec-material"><h2>Commercial Material Performance</h2><div class="meta"><em>Takeaway: Top GMV materials sit BELOW overall GTN - structural drag on the topline. Loss profile differs sharply by material.</em></div></div>
+  <div class="grid grid-2">
+    <div class="card"><h3>GTN % by Commercial Material</h3><div class="sub">Sorted by GMV (descending). Red bars = below overall GTN.</div><div class="chart-host" data-chart="chMaterial" style="height:480px"><div class="skel"></div></div></div>
+    <div class="card"><h3>GTN % by Material x Module</h3><div class="sub">Heatmap - blank = insufficient items in that combination</div><div id="materialModuleHeat"></div></div>
+  </div>
+  <div class="card"><h3>Material Performance Detail (GTN, Cancel, Reject, Return)</h3><div class="sub">Materials ranked by GMV. All loss-rate columns are % of items.</div><div id="materialList"></div></div>
+
+  <div class="section-title" id="sec-sku"><h2>SKU Performance (per Seller)</h2><div class="meta"><em>Takeaway: SKU shown with both <strong style="color:var(--accent)">Seller GTN</strong> (closure-based) and <strong>Overall GTN</strong> (end-to-end). Worst list ranked by Seller GTN.</em></div></div>
+  <div class="grid grid-4" id="skuKpis"></div>
+  <div class="card"><h3>SKU GTN Distribution (>=10 items)</h3><div class="sub">Number of SKUs in each GTN band - watch the tail</div><div class="chart-host tall" data-chart="chSkuDist"><div class="skel"></div></div></div>
+  <div class="card"><h3>Top 20 SKUs by GMV (with Seller, GTN, and Loss Rates)</h3><div class="sub">Largest SKUs - red badges flag concerning rates</div><div id="topSkusList"></div></div>
+  <div class="card"><h3>20 Worst SKUs by Seller GTN (>=30 items, test sellers excluded)</h3><div class="sub">Ranked by closure-based Seller GTN - reassignment, delisting, or RCA candidates</div><div id="worstSkusList"></div></div>
+
+  
+  <div class="section-title" id="sec-skusla"><h2>SKU SLA Right-Sizing (Assigned vs Actual)</h2><div class="meta"><em>Takeaway: Assigned SLA = Seller Expected Delivery − Confirmation. Actual = Seller Closure − Confirmation. The gap tells you whether the SKU's promised lead time is realistic.</em></div></div>
+  <div class="instr-box">
+    <strong>How to read:</strong> <em>P90 actual</em> = the lead time 90% of the seller's items hit. If P90 is much HIGHER than Assigned SLA → SKU is over-promised; sellers can't hit it → <strong>increase SLA</strong>. If P90 is much LOWER than Assigned SLA → SKU is under-promised; we're wasting customer perception → <strong>decrease SLA</strong>. Filter: closed items only, ≥30 items per SKU+Seller, test sellers excluded.
+  </div>
+  <div class="grid grid-4" id="skuSlaKpis"></div>
+  <div class="card"><h3>SKUs that need to INCREASE assigned SLA (top 25)</h3><div class="sub">P90 actual lead time exceeds promised SLA by ≥2 days — sellers cannot hit the current commitment. Risk: cancellations & customer dissatisfaction.</div><div id="slaIncreaseList"></div></div>
+  <div class="card"><h3>SKUs that can DECREASE assigned SLA (top 25)</h3><div class="sub">Assigned SLA is ≥3 days higher than P90 actual — current promise is too loose. Opportunity: sharper customer experience without operational cost.</div><div id="slaDecreaseList"></div></div>
+
+  <div class="section-title" id="sec-actions"><h2>Action Plan - 19 Initiatives Across 3 Horizons</h2><div class="meta"><em>Color = horizon. Green = Quick Wins, Amber = Mid, Purple = Long.</em></div></div>
+  <div class="instr-box">
+    <strong>How to read:</strong> Each card = one action with detail, KPI target, owner, timeline. Suggested governance: weekly PMO standup on S1-S6, biweekly on M1-M7, monthly on L1-L6.
+  </div>
+  <div class="grid grid-3">
+    <div>
+      <h3 style="margin:0 0 12px;color:var(--short);display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:14px;height:14px;background:var(--short);border-radius:3px"></span>Short Term (0-30 days)</h3>
+      <div id="shortActions"></div>
+    </div>
+    <div>
+      <h3 style="margin:0 0 12px;color:var(--mid);display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:14px;height:14px;background:var(--mid);border-radius:3px"></span>Mid Term (30-90 days)</h3>
+      <div id="midActions"></div>
+    </div>
+    <div>
+      <h3 style="margin:0 0 12px;color:var(--long);display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:14px;height:14px;background:var(--long);border-radius:3px"></span>Long Term (90+ days)</h3>
+      <div id="longActions"></div>
+    </div>
+  </div>
+
+  <div class="uplift">
+    <h3>Estimated GTN Uplift (Order of Magnitude)</h3>
+    <div class="sub" style="color:#065F46">Based on action effectiveness assumptions; refine via pilots.</div>
+    <table id="upliftTable" style="margin-top:8px"></table>
+    <div class="uplift-total"><span class="lbl">Total estimated uplift</span><span class="val" id="upliftTotal">--</span></div>
+  </div>
+
+  <div class="section-title" id="sec-guide"><h2>C-Level Discussion Guide</h2><div class="meta"><em>15-minute meeting structure</em></div></div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Suggested Meeting Flow (15 min)</h3>
+      <ol style="font-size:13px;line-height:1.7">
+        <li><strong>Opening (1 min):</strong> "We are losing ~28% of GMV between order and delivery - EGP 250M in 8 months. Plan recovers ~5-6 pp GTN within 2 quarters."</li>
+        <li><strong>Headline KPIs (2 min):</strong> Six KPI tiles. Anchor on GTN 71.56% and EGP 250M loss.</li>
+        <li><strong>Root causes (3 min):</strong> Three drivers: cancellations, rejections, returns. Highlight dominant reason in each.</li>
+        <li><strong>Where the leak happens (3 min):</strong> Funnel - drop-off after Confirmation = vendor-side. Module table - FDS lags SLA, OCF leads.</li>
+        <li><strong>Capacity story (2 min):</strong> Overloaded vs underutilized. Volume rebalance is no-cost.</li>
+        <li><strong>Action plan (3 min):</strong> Six quick wins for Q1; commit owners and timelines.</li>
+        <li><strong>Asks (1 min):</strong> Approval for SLA penalty structure (M2), tech bandwidth for COD risk filter (S6), Commercial buy-in for vendor tiering (M1).</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Likely C-Level Questions &amp; Suggested Answers</h3>
+      <div style="font-size:13px;line-height:1.6">
+        <div style="margin-bottom:12px"><strong style="color:var(--accent)">Q: Why is GTN flat MoM if we have so many initiatives?</strong><br>A: Most prior initiatives addressed symptoms (post-cancel comms) not root causes (seller lead time + reassignment governance).</div>
+        <div style="margin-bottom:12px"><strong style="color:var(--accent)">Q: Which single move has the biggest payback?</strong><br>A: Reducing cancellations 30% via S1 + S6 - addressable EGP ~37M GMV recovered annually.</div>
+        <div style="margin-bottom:12px"><strong style="color:var(--accent)">Q: What's the cheapest action?</strong><br>A: M6 - rebalance volume from overloaded to underutilized sellers. Zero capex.</div>
+        <div style="margin-bottom:12px"><strong style="color:var(--accent)">Q: What's the riskiest assumption?</strong><br>A: That sellers will improve under SLA penalties. Mitigation: graduated escalation (M2).</div>
+        <div style="margin-bottom:12px"><strong style="color:var(--accent)">Q: How do we measure success?</strong><br>A: Single source-of-truth GTN dashboard (L6) refreshed daily; monthly steerco.</div>
+        <div><strong style="color:var(--accent)">Q: What if we do nothing?</strong><br>A: Status quo loses ~EGP 31M/month in non-recoverable GMV.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="background:#FAFAF9;border-style:dashed">
+    <h3>Data Quality &amp; Methodology Notes</h3>
+    <ul style="font-size:12.5px;color:var(--text);margin:0;padding-left:20px;line-height:1.7">
+      <li>All metrics computed strictly on the 128,496 order items provided.</li>
+      <li>SLA evaluable on items with both Seller Closure Date and Seller Expected Delivery Date populated.</li>
+      <li>Module-specific closure: <strong>MDS</strong> = min(DC, Shipped) | <strong>OCF</strong> = RTS | <strong>FDS</strong> = Delivered.</li>
+      <li>Logistics LT computed only for MDS/OCF (FDS has no separate handover-to-delivered leg).</li>
+      <li>Reassignment: SKUs with &gt;=2 sellers and &gt;=20 items combined; "Latest" = most recent Last Order date.</li>
+      <li>Capacity: Overloaded = monthly volume &gt;=P75 AND SLA &lt;median. Underutilized = monthly volume &lt;=P25 AND SLA &gt;=median AND GTN &gt;=median.</li>
+      <li>Uplift estimates are order-of-magnitude based on action effectiveness assumptions.</li>
+    </ul>
+  </div>
+
+  <div class="footer">Homzmart Vendor Operations &middot; Confidential &middot; Generated 04 May 2026 &middot; Source: GTN-May26.xlsx (128,496 items, Aug 2025 - Mar 2026)</div>
+</div>
+
+<!-- Data embedded as JSON, not as JS literal - safer & faster to parse -->
+<script type="application/json" id="dashboardData">{
+  "headline": {
+    "gtn": 71.56,
+    "dr": 75.07,
+    "sla": 75.6,
+    "gmv_total": 886314973.41,
+    "gmv_delivered": 634227581.3299999,
+    "gmv_lost": 250258218.10999998,
+    "gmv_cancel": 125056597.95000002,
+    "gmv_reject": 98928240.42999999,
+    "gmv_return": 26273379.729999997,
+    "items_total": 128496,
+    "items_delivered": 96464,
+    "avg_seller_lt": 8.96,
+    "avg_logistics_lt": 6.32,
+    "gtn_seller": 80.08,
+    "dr_seller": 85.19
+  },
+  "mom": {
+    "months": [
+      "Aug-25",
+      "Sep-25",
+      "Oct-25",
+      "Nov-25",
+      "Dec-25",
+      "Jan-26",
+      "Feb-26",
+      "Mar-26"
+    ],
+    "gtn": [
+      68.85,
+      75.23,
+      68.04,
+      71.35,
+      70.71,
+      68.64,
+      71.68,
+      69.86
+    ],
+    "dr": [
+      71.76,
+      80.82,
+      73.68,
+      74.5,
+      73.34,
+      72.11,
+      72.29,
+      71.6
+    ],
+    "sla": [
+      79.71,
+      78.82,
+      79.81,
+      65.03,
+      74.01,
+      79.04,
+      83.68,
+      86.74
+    ],
+    "gmv": [
+      66961208.68,
+      243444448.34,
+      73001409.91,
+      187062893.49,
+      83901650.68,
+      78269167.21,
+      77805737.71,
+      75868457.39
+    ],
+    "cancel_rate": [
+      17.23,
+      13.37,
+      18.15,
+      14.54,
+      13.97,
+      14.47,
+      12.19,
+      10.53
+    ],
+    "reject_rate": [
+      11.2,
+      7.62,
+      11.01,
+      11.52,
+      12.65,
+      14.46,
+      12.77,
+      15.06
+    ],
+    "return_rate": [
+      2.72,
+      3.77,
+      2.8,
+      2.58,
+      2.64,
+      2.28,
+      3.21,
+      2.49
+    ]
+  },
+  "module": [
+    {
+      "name": "FDS",
+      "items": 53410,
+      "gmv": 482027500.12,
+      "gtn": 73.56,
+      "dr": 76.36,
+      "sla": 71.6,
+      "avg_seller_lt": 10.27,
+      "avg_logistics_lt": null,
+      "gtn_seller": 76.25,
+      "dr_seller": 79.26
+    },
+    {
+      "name": "MDS",
+      "items": 35114,
+      "gmv": 176539166.18,
+      "gtn": 69.32,
+      "dr": 74.24,
+      "sla": 72.07,
+      "avg_seller_lt": 9.19,
+      "avg_logistics_lt": 4.08,
+      "gtn_seller": 82.11,
+      "dr_seller": 87.49
+    },
+    {
+      "name": "OCF",
+      "items": 39972,
+      "gmv": 227748307.11,
+      "gtn": 69.06,
+      "dr": 74.09,
+      "sla": 82.08,
+      "avg_seller_lt": 7.54,
+      "avg_logistics_lt": 8.21,
+      "gtn_seller": 86.61,
+      "dr_seller": 91.08
+    }
+  ],
+  "module_trend": {
+    "months": [
+      "Aug-25",
+      "Sep-25",
+      "Oct-25",
+      "Nov-25",
+      "Dec-25",
+      "Jan-26",
+      "Feb-26",
+      "Mar-26"
+    ],
+    "gtn": {
+      "FDS": [
+        69.44,
+        76.74,
+        67.61,
+        74.21,
+        74.74,
+        71.84,
+        75.01,
+        71.43
+      ],
+      "MDS": [
+        69.14,
+        72.86,
+        67.18,
+        69.16,
+        66.06,
+        65.91,
+        66.79,
+        65.32
+      ],
+      "OCF": [
+        66.93,
+        74.58,
+        69.47,
+        68.18,
+        65.9,
+        63.78,
+        66.18,
+        68.32
+      ]
+    },
+    "dr": {
+      "FDS": [
+        72.22,
+        80.89,
+        73.44,
+        77.43,
+        75.38,
+        74.0,
+        75.12,
+        73.13
+      ],
+      "MDS": [
+        70.21,
+        80.88,
+        71.36,
+        72.29,
+        72.46,
+        70.89,
+        70.84,
+        70.33
+      ],
+      "OCF": [
+        72.73,
+        80.66,
+        76.0,
+        72.81,
+        71.52,
+        70.63,
+        69.46,
+        69.92
+      ]
+    },
+    "sla": {
+      "FDS": [
+        75.01,
+        72.08,
+        77.05,
+        65.52,
+        73.31,
+        73.85,
+        72.67,
+        0.0
+      ],
+      "MDS": [
+        74.38,
+        76.24,
+        75.5,
+        61.26,
+        68.78,
+        74.84,
+        78.57,
+        0.0
+      ],
+      "OCF": [
+        91.8,
+        90.18,
+        86.5,
+        66.77,
+        79.0,
+        87.57,
+        87.65,
+        87.08
+      ]
+    }
+  },
+  "funnel": [
+    {
+      "stage": "Placed",
+      "count": 128496,
+      "pct": 100.0,
+      "drop_pct": 0.0,
+      "drop_n": 0
+    },
+    {
+      "stage": "Confirmed",
+      "count": 126022,
+      "pct": 98.07,
+      "drop_pct": 1.93,
+      "drop_n": 2474
+    },
+    {
+      "stage": "In Progress",
+      "count": 119876,
+      "pct": 93.29,
+      "drop_pct": 4.88,
+      "drop_n": 6146
+    },
+    {
+      "stage": "Ready to Ship",
+      "count": 116700,
+      "pct": 90.82,
+      "drop_pct": 2.65,
+      "drop_n": 3176
+    },
+    {
+      "stage": "Shipped/DC",
+      "count": 87631,
+      "pct": 68.2,
+      "drop_pct": 24.91,
+      "drop_n": 29069
+    },
+    {
+      "stage": "Delivered",
+      "count": 84613,
+      "pct": 65.85,
+      "drop_pct": 3.44,
+      "drop_n": 3018
+    }
+  ],
+  "region": [
+    {
+      "name": "Cairo",
+      "items": 74427,
+      "gmv": 516146001.21,
+      "gtn": 72.42,
+      "dr": 75.69,
+      "sla": 76.16,
+      "gap": 0.86,
+      "cancel_rate": 13.5,
+      "return_rate": 3.09
+    },
+    {
+      "name": "Giza",
+      "items": 34058,
+      "gmv": 245248601.46,
+      "gtn": 70.74,
+      "dr": 75.12,
+      "sla": 76.21,
+      "gap": -0.82,
+      "cancel_rate": 14.61,
+      "return_rate": 2.75
+    },
+    {
+      "name": "Alexandria",
+      "items": 8282,
+      "gmv": 49216328.68,
+      "gtn": 73.48,
+      "dr": 76.88,
+      "sla": 71.96,
+      "gap": 1.92,
+      "cancel_rate": 13.83,
+      "return_rate": 3.7
+    },
+    {
+      "name": "Qalyubia",
+      "items": 2009,
+      "gmv": 12616135.72,
+      "gtn": 71.44,
+      "dr": 73.82,
+      "sla": 75.68,
+      "gap": -0.12,
+      "cancel_rate": 15.15,
+      "return_rate": 2.7
+    },
+    {
+      "name": "North Coast",
+      "items": 1068,
+      "gmv": 9249087.87,
+      "gtn": 65.97,
+      "dr": 68.16,
+      "sla": 73.39,
+      "gap": -5.59,
+      "cancel_rate": 18.06,
+      "return_rate": 2.18
+    },
+    {
+      "name": "Hurghada",
+      "items": 1234,
+      "gmv": 8457418.02,
+      "gtn": 64.84,
+      "dr": 71.64,
+      "sla": 72.09,
+      "gap": -6.72,
+      "cancel_rate": 17.82,
+      "return_rate": 1.99
+    },
+    {
+      "name": "Dakahlia",
+      "items": 1428,
+      "gmv": 7638714.96,
+      "gtn": 64.46,
+      "dr": 67.09,
+      "sla": 73.82,
+      "gap": -7.1,
+      "cancel_rate": 19.14,
+      "return_rate": 2.59
+    },
+    {
+      "name": "Sharkia",
+      "items": 1029,
+      "gmv": 6055819.17,
+      "gtn": 65.14,
+      "dr": 67.64,
+      "sla": 73.26,
+      "gap": -6.42,
+      "cancel_rate": 18.22,
+      "return_rate": 1.75
+    },
+    {
+      "name": "Ein Sokhna",
+      "items": 641,
+      "gmv": 6035221.76,
+      "gtn": 80.44,
+      "dr": 83.0,
+      "sla": 62.48,
+      "gap": 8.88,
+      "cancel_rate": 5.4,
+      "return_rate": 2.19
+    },
+    {
+      "name": "Menofia",
+      "items": 693,
+      "gmv": 4064054.34,
+      "gtn": 63.68,
+      "dr": 62.77,
+      "sla": 69.09,
+      "gap": -7.88,
+      "cancel_rate": 18.06,
+      "return_rate": 2.02
+    },
+    {
+      "name": "Gharbia",
+      "items": 692,
+      "gmv": 3484384.9699999997,
+      "gtn": 69.96,
+      "dr": 72.98,
+      "sla": 75.31,
+      "gap": -1.6,
+      "cancel_rate": 11.86,
+      "return_rate": 3.2
+    },
+    {
+      "name": "Minya",
+      "items": 426,
+      "gmv": 2914171.66,
+      "gtn": 50.92,
+      "dr": 59.39,
+      "sla": 71.97,
+      "gap": -20.64,
+      "cancel_rate": 30.84,
+      "return_rate": 1.22
+    },
+    {
+      "name": "Ismailia",
+      "items": 396,
+      "gmv": 2872274.87,
+      "gtn": 73.41,
+      "dr": 77.27,
+      "sla": 72.7,
+      "gap": 1.85,
+      "cancel_rate": 14.28,
+      "return_rate": 4.04
+    },
+    {
+      "name": "Assiut",
+      "items": 405,
+      "gmv": 2392652.3,
+      "gtn": 52.11,
+      "dr": 66.42,
+      "sla": 71.06,
+      "gap": -19.45,
+      "cancel_rate": 24.25,
+      "return_rate": 2.17
+    },
+    {
+      "name": "Port Said",
+      "items": 271,
+      "gmv": 1775487.2,
+      "gtn": 69.57,
+      "dr": 69.37,
+      "sla": 75.24,
+      "gap": -1.99,
+      "cancel_rate": 13.41,
+      "return_rate": 3.27
+    },
+    {
+      "name": "Suez",
+      "items": 346,
+      "gmv": 1705542.66,
+      "gtn": 61.82,
+      "dr": 68.79,
+      "sla": 78.95,
+      "gap": -9.74,
+      "cancel_rate": 15.74,
+      "return_rate": 1.82
+    },
+    {
+      "name": "Beheira",
+      "items": 331,
+      "gmv": 1671357.19,
+      "gtn": 72.63,
+      "dr": 71.3,
+      "sla": 80.23,
+      "gap": 1.07,
+      "cancel_rate": 12.94,
+      "return_rate": 2.57
+    },
+    {
+      "name": "Kafr El Sheikh",
+      "items": 231,
+      "gmv": 1355098.38,
+      "gtn": 58.14,
+      "dr": 46.32,
+      "sla": 76.26,
+      "gap": -13.42,
+      "cancel_rate": 25.76,
+      "return_rate": 0.06
+    },
+    {
+      "name": "Beni Suef",
+      "items": 208,
+      "gmv": 1189273.21,
+      "gtn": 73.14,
+      "dr": 68.75,
+      "sla": 68.07,
+      "gap": 1.58,
+      "cancel_rate": 14.62,
+      "return_rate": 0.68
+    },
+    {
+      "name": "Gouna",
+      "items": 170,
+      "gmv": 1144420.1,
+      "gtn": 71.77,
+      "dr": 69.41,
+      "sla": 66.67,
+      "gap": 0.21,
+      "cancel_rate": 17.3,
+      "return_rate": 2.54
+    },
+    {
+      "name": "Faiyum",
+      "items": 151,
+      "gmv": 1082927.68,
+      "gtn": 57.13,
+      "dr": 66.23,
+      "sla": 70.8,
+      "gap": -14.43,
+      "cancel_rate": 26.5,
+      "return_rate": 3.4
+    }
+  ],
+  "payment": [
+    {
+      "name": "CoD",
+      "items": 61229,
+      "gmv": 409421812.06,
+      "gtn": 56.69,
+      "dr": 62.75,
+      "cancel_rate": 21.17,
+      "return_rate": 2.39
+    },
+    {
+      "name": "Prepaid",
+      "items": 67267,
+      "gmv": 476893161.35,
+      "gtn": 84.32,
+      "dr": 86.29,
+      "cancel_rate": 8.05,
+      "return_rate": 3.46
+    }
+  ],
+  "cancel_reasons": [
+    {
+      "reason": "I am not interested in the item anymore",
+      "gmv": 53073425.11,
+      "items": 5245,
+      "pct": 40.97
+    },
+    {
+      "reason": "Modification On Order",
+      "gmv": 34967207.28,
+      "items": 3623,
+      "pct": 26.99
+    },
+    {
+      "reason": "Delivery SLA",
+      "gmv": 12508052.78,
+      "items": 1476,
+      "pct": 9.65
+    },
+    {
+      "reason": "Customer Unreachable",
+      "gmv": 7589913.88,
+      "items": 531,
+      "pct": 5.86
+    },
+    {
+      "reason": "Order Fulfillment",
+      "gmv": 6587234.52,
+      "items": 903,
+      "pct": 5.08
+    },
+    {
+      "reason": "Duplicate Order",
+      "gmv": 5600876.06,
+      "items": 883,
+      "pct": 4.32
+    },
+    {
+      "reason": "Competition Segmentation",
+      "gmv": 3948799.81,
+      "items": 337,
+      "pct": 3.05
+    },
+    {
+      "reason": "Test Order",
+      "gmv": 2519240.22,
+      "items": 537,
+      "pct": 1.94
+    }
+  ],
+  "reject_reasons": [
+    {
+      "reason": "Customer Issue",
+      "gmv": 61514232.79,
+      "items": 8682,
+      "pct": 80.71
+    },
+    {
+      "reason": "Quality Issue",
+      "gmv": 11197843.78,
+      "items": 2261,
+      "pct": 14.69
+    },
+    {
+      "reason": "Delivery Issue",
+      "gmv": 3296865.08,
+      "items": 661,
+      "pct": 4.33
+    },
+    {
+      "reason": "I am not interested in the item anymore",
+      "gmv": 101245.53,
+      "items": 17,
+      "pct": 0.13
+    },
+    {
+      "reason": "Delivery SLA",
+      "gmv": 49626.020000000004,
+      "items": 5,
+      "pct": 0.07
+    },
+    {
+      "reason": "Duplicate Order",
+      "gmv": 35625.9,
+      "items": 3,
+      "pct": 0.05
+    },
+    {
+      "reason": "Modification On Order",
+      "gmv": 22821.11,
+      "items": 6,
+      "pct": 0.03
+    }
+  ],
+  "return_reasons": [
+    {
+      "reason": "Quality Issue",
+      "gmv": 2325035.79,
+      "items": 339,
+      "pct": 53.46
+    },
+    {
+      "reason": "Expectation Issue",
+      "gmv": 1257842.09,
+      "items": 148,
+      "pct": 28.92
+    },
+    {
+      "reason": "Item Not Matching",
+      "gmv": 755264.88,
+      "items": 113,
+      "pct": 17.37
+    },
+    {
+      "reason": "Warranty Issues",
+      "gmv": 11025.0,
+      "items": 2,
+      "pct": 0.25
+    }
+  ],
+  "top_sellers_gmv": [
+    {
+      "name": "Joint For Furniture",
+      "items": 6136,
+      "gmv": 87565419.17,
+      "gtn": 81.92,
+      "gtn_overall": 67.03,
+      "dr": 83.38,
+      "sla": 55.44,
+      "avg_seller_lt": 15.2,
+      "module": "OCF"
+    },
+    {
+      "name": "Cairo ACs",
+      "items": 2227,
+      "gmv": 53674902.06,
+      "gtn": 71.63,
+      "gtn_overall": 70.9,
+      "dr": 72.25,
+      "sla": 71.63,
+      "avg_seller_lt": 5.89,
+      "module": "FDS"
+    },
+    {
+      "name": "Couch Furniture",
+      "items": 1581,
+      "gmv": 33393766.16,
+      "gtn": 83.59,
+      "gtn_overall": 66.58,
+      "dr": 82.92,
+      "sla": 42.29,
+      "avg_seller_lt": 18.8,
+      "module": "OCF"
+    },
+    {
+      "name": "Elostaz Furniture",
+      "items": 1808,
+      "gmv": 27029251.71,
+      "gtn": 78.53,
+      "gtn_overall": 70.05,
+      "dr": 79.7,
+      "sla": 54.45,
+      "avg_seller_lt": 20.59,
+      "module": "FDS"
+    },
+    {
+      "name": "Premier Wood",
+      "items": 1428,
+      "gmv": 21175007.8,
+      "gtn": 87.52,
+      "gtn_overall": 66.44,
+      "dr": 89.43,
+      "sla": 78.39,
+      "avg_seller_lt": 8.49,
+      "module": "OCF"
+    },
+    {
+      "name": "Woody Stores",
+      "items": 2111,
+      "gmv": 19215883.05,
+      "gtn": 79.82,
+      "gtn_overall": 76.71,
+      "dr": 82.38,
+      "sla": 67.72,
+      "avg_seller_lt": 15.27,
+      "module": "FDS"
+    },
+    {
+      "name": "A&T Homzmart",
+      "items": 528,
+      "gmv": 15705535.85,
+      "gtn": 78.11,
+      "gtn_overall": 74.31,
+      "dr": 78.79,
+      "sla": 49.13,
+      "avg_seller_lt": 13.96,
+      "module": "FDS"
+    },
+    {
+      "name": "D.H Furniture",
+      "items": 1781,
+      "gmv": 13774522.96,
+      "gtn": 79.74,
+      "gtn_overall": 76.32,
+      "dr": 80.12,
+      "sla": 61.1,
+      "avg_seller_lt": 11.58,
+      "module": "FDS"
+    },
+    {
+      "name": "Diarna EG Furniture",
+      "items": 698,
+      "gmv": 13388643.43,
+      "gtn": 81.86,
+      "gtn_overall": 78.22,
+      "dr": 82.38,
+      "sla": 85.57,
+      "avg_seller_lt": 10.32,
+      "module": "FDS"
+    },
+    {
+      "name": "Samia Amr Elhiny Designe Furn",
+      "items": 686,
+      "gmv": 13103902.33,
+      "gtn": 64.42,
+      "gtn_overall": 55.89,
+      "dr": 67.35,
+      "sla": 22.94,
+      "avg_seller_lt": 34.07,
+      "module": "FDS"
+    },
+    {
+      "name": "Diarna",
+      "items": 1501,
+      "gmv": 12882720.12,
+      "gtn": 82.04,
+      "gtn_overall": 78.69,
+      "dr": 83.21,
+      "sla": 79.85,
+      "avg_seller_lt": 9.16,
+      "module": "FDS"
+    },
+    {
+      "name": "Home Art Furniture",
+      "items": 634,
+      "gmv": 12803130.46,
+      "gtn": 73.26,
+      "gtn_overall": 68.68,
+      "dr": 74.61,
+      "sla": 68.51,
+      "avg_seller_lt": 12.13,
+      "module": "FDS"
+    },
+    {
+      "name": "Magic Art",
+      "items": 2963,
+      "gmv": 12700831.46,
+      "gtn": 88.98,
+      "gtn_overall": 67.49,
+      "dr": 89.2,
+      "sla": 52.42,
+      "avg_seller_lt": 11.04,
+      "module": "OCF"
+    },
+    {
+      "name": "Janssen",
+      "items": 1477,
+      "gmv": 12380120.63,
+      "gtn": 82.21,
+      "gtn_overall": 74.18,
+      "dr": 81.79,
+      "sla": 77.2,
+      "avg_seller_lt": 17.3,
+      "module": "MDS"
+    },
+    {
+      "name": "Elbatal Furniture",
+      "items": 2590,
+      "gmv": 10951634.68,
+      "gtn": 93.56,
+      "gtn_overall": 71.27,
+      "dr": 92.9,
+      "sla": 67.0,
+      "avg_seller_lt": 10.18,
+      "module": "OCF"
+    }
+  ],
+  "worst_sellers_gtn": [
+    {
+      "name": "Wood mood",
+      "items": 131,
+      "gmv": 2116687.16,
+      "gtn": 55.6,
+      "gtn_overall": 48.67,
+      "sla": 26.79,
+      "module": "FDS"
+    },
+    {
+      "name": "Koky Wood",
+      "items": 107,
+      "gmv": 2298028.88,
+      "gtn": 61.84,
+      "gtn_overall": 60.69,
+      "sla": 16.13,
+      "module": "FDS"
+    },
+    {
+      "name": "Howzit",
+      "items": 152,
+      "gmv": 5888764.08,
+      "gtn": 64.05,
+      "gtn_overall": 60.82,
+      "sla": 76.83,
+      "module": "FDS"
+    },
+    {
+      "name": "Samia Amr Elhiny Designe Furn",
+      "items": 686,
+      "gmv": 13103902.33,
+      "gtn": 64.42,
+      "gtn_overall": 55.89,
+      "sla": 22.94,
+      "module": "FDS"
+    },
+    {
+      "name": "Uncle Sam Lighting",
+      "items": 130,
+      "gmv": 109737.7,
+      "gtn": 65.01,
+      "gtn_overall": 60.61,
+      "sla": 31.11,
+      "module": "FDS"
+    },
+    {
+      "name": "Realwood Designs",
+      "items": 192,
+      "gmv": 1336504.44,
+      "gtn": 65.1,
+      "gtn_overall": 56.47,
+      "sla": 49.09,
+      "module": "FDS"
+    },
+    {
+      "name": "EGA",
+      "items": 262,
+      "gmv": 9002989.83,
+      "gtn": 65.38,
+      "gtn_overall": 55.72,
+      "sla": 31.54,
+      "module": "MDS"
+    },
+    {
+      "name": "Wood&More",
+      "items": 131,
+      "gmv": 844635.56,
+      "gtn": 65.72,
+      "gtn_overall": 61.92,
+      "sla": 66.28,
+      "module": "FDS"
+    },
+    {
+      "name": "Air2",
+      "items": 233,
+      "gmv": 7183620.2,
+      "gtn": 67.03,
+      "gtn_overall": 67.03,
+      "sla": 93.27,
+      "module": "FDS"
+    },
+    {
+      "name": "White cool ACs",
+      "items": 395,
+      "gmv": 9842526.91,
+      "gtn": 69.01,
+      "gtn_overall": 68.67,
+      "sla": 70.3,
+      "module": "FDS"
+    },
+    {
+      "name": "Radio Talaat",
+      "items": 360,
+      "gmv": 4900024.02,
+      "gtn": 69.84,
+      "gtn_overall": 69.06,
+      "sla": 89.6,
+      "module": "FDS"
+    },
+    {
+      "name": "MA Store",
+      "items": 365,
+      "gmv": 1654707.88,
+      "gtn": 69.94,
+      "gtn_overall": 63.75,
+      "sla": 50.0,
+      "module": "FDS"
+    },
+    {
+      "name": "Golden A Large",
+      "items": 861,
+      "gmv": 10592040.57,
+      "gtn": 69.96,
+      "gtn_overall": 68.51,
+      "sla": 40.28,
+      "module": "FDS"
+    },
+    {
+      "name": "Aura Furniture",
+      "items": 488,
+      "gmv": 8138417.23,
+      "gtn": 70.22,
+      "gtn_overall": 63.83,
+      "sla": 60.07,
+      "module": "FDS"
+    },
+    {
+      "name": "Gomla Market LA",
+      "items": 600,
+      "gmv": 6020313.63,
+      "gtn": 70.53,
+      "gtn_overall": 67.81,
+      "sla": 71.91,
+      "module": "FDS"
+    }
+  ],
+  "capacity_segments": [
+    {
+      "name": "At Risk",
+      "sellers": 133,
+      "gmv": 73860609.77,
+      "gtn": 74.25,
+      "gtn_overall": 67.75,
+      "sla": 45.11
+    },
+    {
+      "name": "Balanced",
+      "sellers": 290,
+      "gmv": 104875666.98,
+      "gtn": 67.77,
+      "gtn_overall": 62.48,
+      "sla": 69.58
+    },
+    {
+      "name": "Overloaded",
+      "sellers": 60,
+      "gmv": 449194764.47,
+      "gtn": 80.85,
+      "gtn_overall": 70.56,
+      "sla": 53.6
+    },
+    {
+      "name": "Strong",
+      "sellers": 88,
+      "gmv": 257552900.9,
+      "gtn": 86.97,
+      "gtn_overall": 78.03,
+      "sla": 87.6
+    },
+    {
+      "name": "Underutilized",
+      "sellers": 15,
+      "gmv": 831031.29,
+      "gtn": 96.05,
+      "gtn_overall": 93.61,
+      "sla": 95.19
+    }
+  ],
+  "overloaded_sellers": [
+    {
+      "name": "Joint For Furniture",
+      "avg_monthly": 877.0,
+      "gtn": 81.92,
+      "gtn_overall": 67.03,
+      "sla": 55.44,
+      "gmv": 87565419.17,
+      "module": "OCF"
+    },
+    {
+      "name": "Magic Art",
+      "avg_monthly": 370.0,
+      "gtn": 88.98,
+      "gtn_overall": 67.49,
+      "sla": 52.42,
+      "gmv": 12700831.46,
+      "module": "OCF"
+    },
+    {
+      "name": "Elbatal Furniture",
+      "avg_monthly": 324.0,
+      "gtn": 93.56,
+      "gtn_overall": 71.27,
+      "sla": 67.0,
+      "gmv": 10951634.68,
+      "module": "OCF"
+    },
+    {
+      "name": "Cairo ACs",
+      "avg_monthly": 278.0,
+      "gtn": 71.63,
+      "gtn_overall": 70.9,
+      "sla": 71.63,
+      "gmv": 53674902.06,
+      "module": "FDS"
+    },
+    {
+      "name": "Woody Stores",
+      "avg_monthly": 264.0,
+      "gtn": 79.82,
+      "gtn_overall": 76.71,
+      "sla": 67.72,
+      "gmv": 19215883.05,
+      "module": "FDS"
+    },
+    {
+      "name": "Elksr",
+      "avg_monthly": 261.0,
+      "gtn": 82.09,
+      "gtn_overall": 75.15,
+      "sla": 67.23,
+      "gmv": 1940706.61,
+      "module": "FDS"
+    },
+    {
+      "name": "Elostaz Furniture",
+      "avg_monthly": 226.0,
+      "gtn": 78.53,
+      "gtn_overall": 70.05,
+      "sla": 54.45,
+      "gmv": 27029251.71,
+      "module": "FDS"
+    },
+    {
+      "name": "D.H Furniture",
+      "avg_monthly": 223.0,
+      "gtn": 79.74,
+      "gtn_overall": 76.32,
+      "sla": 61.1,
+      "gmv": 13774522.96,
+      "module": "FDS"
+    },
+    {
+      "name": "Couch Furniture",
+      "avg_monthly": 198.0,
+      "gtn": 83.59,
+      "gtn_overall": 66.58,
+      "sla": 42.29,
+      "gmv": 33393766.16,
+      "module": "OCF"
+    },
+    {
+      "name": "Prestige Mattress",
+      "avg_monthly": 149.0,
+      "gtn": 90.25,
+      "gtn_overall": 77.37,
+      "sla": 60.83,
+      "gmv": 3641393.31,
+      "module": "MDS"
+    }
+  ],
+  "underutilized_sellers": [
+    {
+      "name": "Al Rahma Lighting",
+      "avg_monthly": 2.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 3989.9,
+      "module": "FDS"
+    },
+    {
+      "name": "Art Show",
+      "avg_monthly": 2.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 38681.42,
+      "module": "FDS"
+    },
+    {
+      "name": "ELAMIRA FOR OFFICE FURNITURE MANUFA",
+      "avg_monthly": 2.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 77.78,
+      "gmv": 109236.68,
+      "module": "FDS"
+    },
+    {
+      "name": "High Quality Furniture",
+      "avg_monthly": 2.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 163914.24,
+      "module": "MDS"
+    },
+    {
+      "name": "Trust Trade",
+      "avg_monthly": 1.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 1114.0,
+      "module": "FDS"
+    },
+    {
+      "name": "SunBoat Commerce",
+      "avg_monthly": 2.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 64810.2,
+      "module": "MDS"
+    },
+    {
+      "name": "On Light",
+      "avg_monthly": 2.0,
+      "gtn": 100.0,
+      "gtn_overall": 78.89,
+      "sla": 100.0,
+      "gmv": 60625.0,
+      "module": "OCF"
+    },
+    {
+      "name": "Vodic",
+      "avg_monthly": 1.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 1470.0,
+      "module": "FDS"
+    },
+    {
+      "name": "Unity desgin office gaming",
+      "avg_monthly": 1.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 9230.0,
+      "module": "FDS"
+    },
+    {
+      "name": "TurboLine",
+      "avg_monthly": 1.0,
+      "gtn": 100.0,
+      "gtn_overall": 100.0,
+      "sla": 100.0,
+      "gmv": 14223.0,
+      "module": "FDS"
+    }
+  ],
+  "module_funnel": {
+    "MDS": {
+      "placed": 35114,
+      "confirmed": 34459,
+      "rts": 31377,
+      "shipped": 26990,
+      "delivered": 22952
+    },
+    "OCF": {
+      "placed": 39972,
+      "confirmed": 39167,
+      "rts": 36320,
+      "shipped": 29661,
+      "delivered": 26827
+    },
+    "FDS": {
+      "placed": 53410,
+      "confirmed": 52396,
+      "rts": 49003,
+      "shipped": 30980,
+      "delivered": 34834
+    }
+  },
+  "sla_impact": [
+    {
+      "status": "Breached",
+      "items": 23932,
+      "gtn": 88.46,
+      "dr": 86.59,
+      "cancel_rate": 0.43,
+      "return_rate": 3.57
+    },
+    {
+      "status": "Compliant",
+      "items": 74166,
+      "gtn": 88.26,
+      "dr": 87.42,
+      "cancel_rate": 0.53,
+      "return_rate": 3.86
+    }
+  ],
+  "logistics": [
+    {
+      "module": "MDS",
+      "items": 22521,
+      "avg": 4.08,
+      "p50": 3.0,
+      "p90": 9.0
+    },
+    {
+      "module": "OCF",
+      "items": 26815,
+      "avg": 8.21,
+      "p50": 7.0,
+      "p90": 15.0
+    }
+  ],
+  "reassign_summary": {
+    "total_multi_skus": 758,
+    "evaluable": 229,
+    "declined": 113,
+    "improved": 116,
+    "avg_decline": -19.82,
+    "avg_improve": 33.74
+  },
+  "material": [
+    {
+      "name": "Furniture",
+      "items": 18289,
+      "gmv": 304904926.83,
+      "gtn": 67.64,
+      "dr": 69.88,
+      "cancel_rate": 15.53,
+      "reject_rate": 10.71,
+      "return_rate": 3.58,
+      "gap": -3.92
+    },
+    {
+      "name": "Home Appliance",
+      "items": 12782,
+      "gmv": 177616683.95,
+      "gtn": 72.1,
+      "dr": 73.69,
+      "cancel_rate": 11.14,
+      "reject_rate": 13.72,
+      "return_rate": 1.44,
+      "gap": 0.54
+    },
+    {
+      "name": "MDF",
+      "items": 25156,
+      "gmv": 174345362.87,
+      "gtn": 72.29,
+      "dr": 73.99,
+      "cancel_rate": 11.83,
+      "reject_rate": 11.02,
+      "return_rate": 2.98,
+      "gap": 0.73
+    },
+    {
+      "name": "Textile",
+      "items": 14613,
+      "gmv": 41039513.27,
+      "gtn": 76.17,
+      "dr": 78.06,
+      "cancel_rate": 8.3,
+      "reject_rate": 11.32,
+      "return_rate": 2.16,
+      "gap": 4.61
+    },
+    {
+      "name": "Outdoor Furniture",
+      "items": 4570,
+      "gmv": 35267665.77,
+      "gtn": 75.11,
+      "dr": 75.38,
+      "cancel_rate": 8.86,
+      "reject_rate": 12.41,
+      "return_rate": 2.89,
+      "gap": 3.55
+    },
+    {
+      "name": "Office Furniture",
+      "items": 6702,
+      "gmv": 31739821.25,
+      "gtn": 79.56,
+      "dr": 80.19,
+      "cancel_rate": 7.94,
+      "reject_rate": 9.12,
+      "return_rate": 2.7,
+      "gap": 8.0
+    },
+    {
+      "name": "Decor",
+      "items": 16039,
+      "gmv": 30712808.62,
+      "gtn": 73.85,
+      "dr": 74.12,
+      "cancel_rate": 8.47,
+      "reject_rate": 14.33,
+      "return_rate": 2.92,
+      "gap": 2.29
+    },
+    {
+      "name": "Steel",
+      "items": 6740,
+      "gmv": 30196380.52,
+      "gtn": 73.15,
+      "dr": 76.34,
+      "cancel_rate": 8.38,
+      "reject_rate": 11.56,
+      "return_rate": 3.71,
+      "gap": 1.59
+    },
+    {
+      "name": "Lighting",
+      "items": 13865,
+      "gmv": 16674029.85,
+      "gtn": 76.98,
+      "dr": 78.21,
+      "cancel_rate": 7.39,
+      "reject_rate": 11.52,
+      "return_rate": 2.73,
+      "gap": 5.42
+    },
+    {
+      "name": "Sports",
+      "items": 1304,
+      "gmv": 15617389.31,
+      "gtn": 77.84,
+      "dr": 78.53,
+      "cancel_rate": 9.36,
+      "reject_rate": 10.35,
+      "return_rate": 1.69,
+      "gap": 6.28
+    },
+    {
+      "name": "Baby & Kids",
+      "items": 2725,
+      "gmv": 11313055.9,
+      "gtn": 72.13,
+      "dr": 72.44,
+      "cancel_rate": 10.83,
+      "reject_rate": 13.58,
+      "return_rate": 2.31,
+      "gap": 0.57
+    },
+    {
+      "name": "Kitchen",
+      "items": 4714,
+      "gmv": 10847592.28,
+      "gtn": 77.57,
+      "dr": 80.74,
+      "cancel_rate": 8.76,
+      "reject_rate": 8.63,
+      "return_rate": 1.68,
+      "gap": 6.01
+    },
+    {
+      "name": "Doors",
+      "items": 295,
+      "gmv": 3031650.28,
+      "gtn": 80.96,
+      "dr": 75.25,
+      "cancel_rate": 13.22,
+      "reject_rate": 10.17,
+      "return_rate": 1.36,
+      "gap": 9.4
+    },
+    {
+      "name": "Bathroom",
+      "items": 392,
+      "gmv": 1807227.48,
+      "gtn": 77.12,
+      "dr": 79.34,
+      "cancel_rate": 9.18,
+      "reject_rate": 9.44,
+      "return_rate": 2.04,
+      "gap": 5.56
+    },
+    {
+      "name": "Electronics",
+      "items": 101,
+      "gmv": 642310.88,
+      "gtn": 54.71,
+      "dr": 60.4,
+      "cancel_rate": 26.73,
+      "reject_rate": 12.87,
+      "return_rate": 0.0,
+      "gap": -16.85
+    },
+    {
+      "name": "Tools",
+      "items": 141,
+      "gmv": 411007.77,
+      "gtn": 59.71,
+      "dr": 70.21,
+      "cancel_rate": 9.22,
+      "reject_rate": 17.02,
+      "return_rate": 3.55,
+      "gap": -11.85
+    },
+    {
+      "name": "Pets",
+      "items": 24,
+      "gmv": 67339.56,
+      "gtn": 63.24,
+      "dr": 62.5,
+      "cancel_rate": 20.83,
+      "reject_rate": 12.5,
+      "return_rate": 4.17,
+      "gap": -8.32
+    },
+    {
+      "name": "Gaming",
+      "items": 20,
+      "gmv": 54402.82,
+      "gtn": 97.09,
+      "dr": 90.0,
+      "cancel_rate": 5.0,
+      "reject_rate": 5.0,
+      "return_rate": 0.0,
+      "gap": 25.53
+    },
+    {
+      "name": "Gift Vouchers",
+      "items": 5,
+      "gmv": 17252.0,
+      "gtn": 98.54,
+      "dr": 60.0,
+      "cancel_rate": 40.0,
+      "reject_rate": 0.0,
+      "return_rate": 0.0,
+      "gap": 26.98
+    },
+    {
+      "name": "Home Improvements",
+      "items": 19,
+      "gmv": 8552.2,
+      "gtn": 61.3,
+      "dr": 73.68,
+      "cancel_rate": 26.32,
+      "reject_rate": 0.0,
+      "return_rate": 0.0,
+      "gap": -10.26
+    }
+  ],
+  "top_skus_gmv": [
+    {
+      "sku": "JOUFURH881825",
+      "seller": "Joint For Furniture",
+      "items": 504,
+      "gmv": 10557475.52,
+      "gtn": 72.86,
+      "gtn_seller": 85.42,
+      "dr": 73.61,
+      "cancel_rate": 14.88,
+      "reject_rate": 11.11,
+      "return_rate": 0.4,
+      "module": "OCF"
+    },
+    {
+      "sku": "Cairo-258.29306435.1",
+      "seller": "Cairo ACs",
+      "items": 389,
+      "gmv": 7548461.53,
+      "gtn": 77.98,
+      "gtn_seller": 78.23,
+      "dr": 78.15,
+      "cancel_rate": 6.94,
+      "reject_rate": 14.91,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "ATHOMZ111326",
+      "seller": "A&T Homzmart",
+      "items": 255,
+      "gmv": 6691643.49,
+      "gtn": 78.66,
+      "gtn_seller": 82.43,
+      "dr": 78.82,
+      "cancel_rate": 14.12,
+      "reject_rate": 3.53,
+      "return_rate": 3.53,
+      "module": "FDS"
+    },
+    {
+      "sku": "CAIRACS092525",
+      "seller": "Cairo ACs",
+      "items": 468,
+      "gmv": 6354411.24,
+      "gtn": 68.19,
+      "gtn_seller": 68.41,
+      "dr": 68.16,
+      "cancel_rate": 13.03,
+      "reject_rate": 18.59,
+      "return_rate": 0.21,
+      "module": "FDS"
+    },
+    {
+      "sku": "JOUFURH528052204",
+      "seller": "Joint For Furniture",
+      "items": 263,
+      "gmv": 5274521.65,
+      "gtn": 78.71,
+      "gtn_seller": 88.11,
+      "dr": 78.71,
+      "cancel_rate": 12.55,
+      "reject_rate": 8.37,
+      "return_rate": 0.38,
+      "module": "OCF"
+    },
+    {
+      "sku": "JF1014",
+      "seller": "Joint For Furniture",
+      "items": 184,
+      "gmv": 4583563.4,
+      "gtn": 60.5,
+      "gtn_seller": 79.6,
+      "dr": 60.33,
+      "cancel_rate": 21.74,
+      "reject_rate": 14.67,
+      "return_rate": 3.26,
+      "module": "OCF"
+    },
+    {
+      "sku": "PRIWO82685",
+      "seller": "Premier Wood",
+      "items": 156,
+      "gmv": 4316436.05,
+      "gtn": 64.42,
+      "gtn_seller": 87.12,
+      "dr": 64.74,
+      "cancel_rate": 13.46,
+      "reject_rate": 12.82,
+      "return_rate": 8.33,
+      "module": "OCF"
+    },
+    {
+      "sku": "JOUFURH94230",
+      "seller": "Joint For Furniture",
+      "items": 880,
+      "gmv": 3947340.45,
+      "gtn": 72.01,
+      "gtn_seller": 88.38,
+      "dr": 71.36,
+      "cancel_rate": 11.25,
+      "reject_rate": 13.64,
+      "return_rate": 3.52,
+      "module": "OCF"
+    },
+    {
+      "sku": "ELOFU6",
+      "seller": "Elostaz Furniture",
+      "items": 140,
+      "gmv": 3722490.77,
+      "gtn": 60.33,
+      "gtn_seller": 70.14,
+      "dr": 60.0,
+      "cancel_rate": 25.71,
+      "reject_rate": 9.29,
+      "return_rate": 5.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "COFUR1030",
+      "seller": "Couch Furniture",
+      "items": 139,
+      "gmv": 3642170.68,
+      "gtn": 72.78,
+      "gtn_seller": 89.39,
+      "dr": 72.66,
+      "cancel_rate": 12.23,
+      "reject_rate": 12.95,
+      "return_rate": 2.16,
+      "module": "OCF"
+    },
+    {
+      "sku": "JOUFURH528052202",
+      "seller": "Joint For Furniture",
+      "items": 179,
+      "gmv": 3573844.16,
+      "gtn": 76.29,
+      "gtn_seller": 84.09,
+      "dr": 76.54,
+      "cancel_rate": 16.2,
+      "reject_rate": 7.26,
+      "return_rate": 0.0,
+      "module": "OCF"
+    },
+    {
+      "sku": "FREFUR61025",
+      "seller": "EGA",
+      "items": 95,
+      "gmv": 3297761.15,
+      "gtn": 69.27,
+      "gtn_seller": 72.11,
+      "dr": 68.42,
+      "cancel_rate": 22.11,
+      "reject_rate": 8.42,
+      "return_rate": 1.05,
+      "module": "MDS"
+    },
+    {
+      "sku": "MAU3074",
+      "seller": "Joint For Furniture",
+      "items": 243,
+      "gmv": 3077734.77,
+      "gtn": 69.98,
+      "gtn_seller": 85.05,
+      "dr": 69.55,
+      "cancel_rate": 15.23,
+      "reject_rate": 11.11,
+      "return_rate": 3.7,
+      "module": "OCF"
+    },
+    {
+      "sku": "CX102227",
+      "seller": "Cairo ACs",
+      "items": 109,
+      "gmv": 2966829.09,
+      "gtn": 69.92,
+      "gtn_seller": 70.8,
+      "dr": 69.72,
+      "cancel_rate": 16.51,
+      "reject_rate": 13.76,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "ZIFUR5",
+      "seller": "Joint For Furniture",
+      "items": 115,
+      "gmv": 2796358.55,
+      "gtn": 57.48,
+      "gtn_seller": 72.83,
+      "dr": 57.39,
+      "cancel_rate": 27.83,
+      "reject_rate": 13.91,
+      "return_rate": 0.87,
+      "module": "OCF"
+    },
+    {
+      "sku": "ZIFUR5",
+      "seller": "Woody Stores",
+      "items": 115,
+      "gmv": 2748441.82,
+      "gtn": 83.05,
+      "gtn_seller": 86.05,
+      "dr": 83.48,
+      "cancel_rate": 8.7,
+      "reject_rate": 6.09,
+      "return_rate": 1.74,
+      "module": "FDS"
+    },
+    {
+      "sku": "WADWDB501",
+      "seller": "D.H Furniture",
+      "items": 340,
+      "gmv": 2686614.51,
+      "gtn": 76.22,
+      "gtn_seller": 79.61,
+      "dr": 76.47,
+      "cancel_rate": 12.06,
+      "reject_rate": 9.12,
+      "return_rate": 2.35,
+      "module": "FDS"
+    },
+    {
+      "sku": "DIAEG25",
+      "seller": "Diarna EG Furniture",
+      "items": 166,
+      "gmv": 2602422.0,
+      "gtn": 81.32,
+      "gtn_seller": 84.17,
+      "dr": 81.93,
+      "cancel_rate": 9.64,
+      "reject_rate": 6.02,
+      "return_rate": 2.41,
+      "module": "FDS"
+    },
+    {
+      "sku": "JOINFUR102725",
+      "seller": "Joint For Furniture",
+      "items": 69,
+      "gmv": 2599871.68,
+      "gtn": 62.05,
+      "gtn_seller": 83.6,
+      "dr": 62.32,
+      "cancel_rate": 15.94,
+      "reject_rate": 17.39,
+      "return_rate": 4.35,
+      "module": "OCF"
+    },
+    {
+      "sku": "COYFSR8",
+      "seller": "Elostaz Furniture",
+      "items": 118,
+      "gmv": 2558419.28,
+      "gtn": 80.97,
+      "gtn_seller": 86.37,
+      "dr": 81.36,
+      "cancel_rate": 13.56,
+      "reject_rate": 2.54,
+      "return_rate": 1.69,
+      "module": "FDS"
+    }
+  ],
+  "worst_skus_gtn": [
+    {
+      "sku": "SHOAPPSA27158",
+      "seller": "Shoppvi Appliances",
+      "items": 37,
+      "gmv": 113075.95000000001,
+      "gtn": 5.39,
+      "gtn_seller": 5.39,
+      "dr": 5.41,
+      "cancel_rate": 94.59,
+      "reject_rate": 0.0,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "KANLIG70902684",
+      "seller": "Kandil Egypt",
+      "items": 36,
+      "gmv": 24693.78,
+      "gtn": 6.03,
+      "gtn_seller": 6.03,
+      "dr": 5.56,
+      "cancel_rate": 94.44,
+      "reject_rate": 0.0,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "AIRAPP82226",
+      "seller": "Air2",
+      "items": 34,
+      "gmv": 524416.35,
+      "gtn": 40.65,
+      "gtn_seller": 40.65,
+      "dr": 41.18,
+      "cancel_rate": 14.71,
+      "reject_rate": 44.12,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "JF1014",
+      "seller": "Woody Stores",
+      "items": 43,
+      "gmv": 1117274.39,
+      "gtn": 43.48,
+      "gtn_seller": 45.61,
+      "dr": 44.19,
+      "cancel_rate": 16.28,
+      "reject_rate": 25.58,
+      "return_rate": 2.33,
+      "module": "FDS"
+    },
+    {
+      "sku": "GOLLA81125",
+      "seller": "Gomla Market LA",
+      "items": 43,
+      "gmv": 705503.12,
+      "gtn": 44.3,
+      "gtn_seller": 46.54,
+      "dr": 46.51,
+      "cancel_rate": 9.3,
+      "reject_rate": 44.19,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "SMABED05082080",
+      "seller": "Smart Home Furniture",
+      "items": 35,
+      "gmv": 308785.6,
+      "gtn": 49.06,
+      "gtn_seller": 49.06,
+      "dr": 48.57,
+      "cancel_rate": 48.57,
+      "reject_rate": 2.86,
+      "return_rate": 0.0,
+      "module": "MDS"
+    },
+    {
+      "sku": "QT.LA.5",
+      "seller": "Quality Trading LA",
+      "items": 30,
+      "gmv": 346927.02999999997,
+      "gtn": 49.71,
+      "gtn_seller": 49.71,
+      "dr": 50.0,
+      "cancel_rate": 20.0,
+      "reject_rate": 30.0,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "SIG.LI.Ebliq-1029-G-",
+      "seller": "Sign Lighting",
+      "items": 36,
+      "gmv": 8101.360000000001,
+      "gtn": 36.19,
+      "gtn_seller": 51.93,
+      "dr": 36.11,
+      "cancel_rate": 50.0,
+      "reject_rate": 13.89,
+      "return_rate": 0.0,
+      "module": "OCF"
+    },
+    {
+      "sku": "CRACS232028",
+      "seller": "Cairo ACs",
+      "items": 52,
+      "gmv": 839099.77,
+      "gtn": 50.05,
+      "gtn_seller": 52.14,
+      "dr": 50.0,
+      "cancel_rate": 25.0,
+      "reject_rate": 23.08,
+      "return_rate": 1.92,
+      "module": "FDS"
+    },
+    {
+      "sku": "RLLPA066",
+      "seller": "El Rawda Lighting 2",
+      "items": 55,
+      "gmv": 3891.23,
+      "gtn": 27.19,
+      "gtn_seller": 53.31,
+      "dr": 38.18,
+      "cancel_rate": 40.0,
+      "reject_rate": 21.82,
+      "return_rate": 0.0,
+      "module": "OCF"
+    },
+    {
+      "sku": "ARTS26",
+      "seller": "Artistico",
+      "items": 30,
+      "gmv": 109508.38,
+      "gtn": 46.86,
+      "gtn_seller": 53.53,
+      "dr": 46.67,
+      "cancel_rate": 46.67,
+      "reject_rate": 6.67,
+      "return_rate": 0.0,
+      "module": "MDS"
+    },
+    {
+      "sku": "DIACON87",
+      "seller": "Diarna",
+      "items": 60,
+      "gmv": 153812.74,
+      "gtn": 53.88,
+      "gtn_seller": 55.54,
+      "dr": 53.33,
+      "cancel_rate": 45.0,
+      "reject_rate": 0.0,
+      "return_rate": 1.67,
+      "module": "FDS"
+    },
+    {
+      "sku": "ZIFUR3",
+      "seller": "Zin Furniture",
+      "items": 51,
+      "gmv": 1683414.85,
+      "gtn": 53.98,
+      "gtn_seller": 56.39,
+      "dr": 54.9,
+      "cancel_rate": 13.73,
+      "reject_rate": 23.53,
+      "return_rate": 1.96,
+      "module": "FDS"
+    },
+    {
+      "sku": "N.M.HD9270",
+      "seller": "Noor marketplace",
+      "items": 176,
+      "gmv": 927851.24,
+      "gtn": 56.81,
+      "gtn_seller": 58.15,
+      "dr": 52.84,
+      "cancel_rate": 2.84,
+      "reject_rate": 43.18,
+      "return_rate": 1.14,
+      "module": "FDS"
+    },
+    {
+      "sku": "FREFUR61027",
+      "seller": "EGA",
+      "items": 30,
+      "gmv": 1095613.43,
+      "gtn": 43.3,
+      "gtn_seller": 58.39,
+      "dr": 40.0,
+      "cancel_rate": 26.67,
+      "reject_rate": 23.33,
+      "return_rate": 10.0,
+      "module": "MDS"
+    },
+    {
+      "sku": "CX44824",
+      "seller": "Cairo ACs",
+      "items": 33,
+      "gmv": 577224.87,
+      "gtn": 58.41,
+      "gtn_seller": 58.41,
+      "dr": 57.58,
+      "cancel_rate": 6.06,
+      "reject_rate": 36.36,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "LAMIR23",
+      "seller": "La Mirror",
+      "items": 31,
+      "gmv": 73649.22,
+      "gtn": 52.34,
+      "gtn_seller": 58.47,
+      "dr": 51.61,
+      "cancel_rate": 6.45,
+      "reject_rate": 35.48,
+      "return_rate": 6.45,
+      "module": "FDS"
+    },
+    {
+      "sku": "MAGAM4",
+      "seller": "MA Store",
+      "items": 41,
+      "gmv": 239429.57,
+      "gtn": 60.58,
+      "gtn_seller": 60.58,
+      "dr": 58.54,
+      "cancel_rate": 19.51,
+      "reject_rate": 21.95,
+      "return_rate": 0.0,
+      "module": "FDS"
+    },
+    {
+      "sku": "ICOFU6363",
+      "seller": "Samia Amr Elhiny Designe Furn",
+      "items": 31,
+      "gmv": 345877.47,
+      "gtn": 54.65,
+      "gtn_seller": 61.55,
+      "dr": 54.84,
+      "cancel_rate": 29.03,
+      "reject_rate": 12.9,
+      "return_rate": 3.23,
+      "module": "FDS"
+    },
+    {
+      "sku": "SMABED05082055",
+      "seller": "Smart Home Furniture",
+      "items": 30,
+      "gmv": 261114.73,
+      "gtn": 40.92,
+      "gtn_seller": 62.02,
+      "dr": 40.0,
+      "cancel_rate": 23.33,
+      "reject_rate": 20.0,
+      "return_rate": 3.33,
+      "module": "MDS"
+    }
+  ],
+  "sku_gtn_distribution": [
+    {
+      "band": "<40%",
+      "skus": 69,
+      "gmv": 6571935.46
+    },
+    {
+      "band": "40-60%",
+      "skus": 270,
+      "gmv": 58460275.19
+    },
+    {
+      "band": "60-75%",
+      "skus": 646,
+      "gmv": 215345764.14
+    },
+    {
+      "band": "75-85%",
+      "skus": 676,
+      "gmv": 182526375.45
+    },
+    {
+      "band": ">=85%",
+      "skus": 710,
+      "gmv": 66854515.2
+    }
+  ],
+  "sku_summary": {
+    "total_skus_evaluated": 2371,
+    "skus_below_70_gtn": 722,
+    "gmv_in_below_70": 201572060.39000002,
+    "pct_skus_below_70": 30.45,
+    "skus_below_70_seller_gtn": 275,
+    "gmv_in_below_70_seller_gtn": 72240406.94
+  },
+  "material_summary": {
+    "total_materials": 20,
+    "materials_below_overall": 5,
+    "top_material": "Furniture",
+    "top_material_gtn": 67.64,
+    "worst_material": "Electronics",
+    "worst_material_gtn": 54.71
+  },
+  "material_module": {
+    "materials": [
+      "Furniture",
+      "Home Appliance",
+      "MDF",
+      "Textile",
+      "Outdoor Furniture",
+      "Office Furniture",
+      "Decor",
+      "Steel",
+      "Lighting",
+      "Sports",
+      "Baby & Kids",
+      "Kitchen",
+      "Doors",
+      "Bathroom",
+      "Electronics",
+      "Tools",
+      "Pets",
+      "Gaming",
+      "Gift Vouchers",
+      "Home Improvements"
+    ],
+    "modules": [
+      "MDS",
+      "OCF",
+      "FDS"
+    ],
+    "gtn": {
+      "Furniture": {
+        "MDS": 65.51,
+        "OCF": 66.42,
+        "FDS": 70.58
+      },
+      "Home Appliance": {
+        "MDS": 92.16,
+        "OCF": 72.12,
+        "FDS": 72.04
+      },
+      "MDF": {
+        "MDS": 63.83,
+        "OCF": 70.44,
+        "FDS": 75.29
+      },
+      "Textile": {
+        "MDS": 75.65,
+        "OCF": 77.8,
+        "FDS": 82.17
+      },
+      "Outdoor Furniture": {
+        "MDS": 75.31,
+        "OCF": 66.97,
+        "FDS": 78.25
+      },
+      "Office Furniture": {
+        "MDS": 73.98,
+        "OCF": 78.97,
+        "FDS": 80.54
+      },
+      "Decor": {
+        "MDS": 70.84,
+        "OCF": 71.93,
+        "FDS": 75.83
+      },
+      "Steel": {
+        "MDS": 71.16,
+        "OCF": 70.87,
+        "FDS": 73.99
+      },
+      "Lighting": {
+        "MDS": 74.94,
+        "OCF": 78.2,
+        "FDS": 78.04
+      },
+      "Sports": {
+        "MDS": 25.82,
+        "OCF": 66.48,
+        "FDS": 78.24
+      },
+      "Baby & Kids": {
+        "MDS": 70.36,
+        "OCF": 60.3,
+        "FDS": 78.43
+      },
+      "Kitchen": {
+        "MDS": 79.15,
+        "OCF": 78.29,
+        "FDS": 76.57
+      },
+      "Doors": {
+        "MDS": 83.5,
+        "OCF": 0.0,
+        "FDS": 80.95
+      },
+      "Bathroom": {
+        "MDS": 78.03,
+        "OCF": 86.35,
+        "FDS": 75.5
+      },
+      "Electronics": {
+        "MDS": null,
+        "OCF": null,
+        "FDS": 54.71
+      },
+      "Tools": {
+        "MDS": 73.4,
+        "OCF": 56.69,
+        "FDS": 40.03
+      },
+      "Pets": {
+        "MDS": 89.8,
+        "OCF": 0.0,
+        "FDS": 56.81
+      },
+      "Gaming": {
+        "MDS": 100.0,
+        "OCF": 82.38,
+        "FDS": 100.0
+      },
+      "Gift Vouchers": {
+        "MDS": 98.54,
+        "OCF": null,
+        "FDS": null
+      },
+      "Home Improvements": {
+        "MDS": 85.49,
+        "OCF": null,
+        "FDS": 0.0
+      }
+    },
+    "items": {
+      "Furniture": {
+        "MDS": 7741,
+        "OCF": 5079,
+        "FDS": 5469
+      },
+      "Home Appliance": {
+        "MDS": 124,
+        "OCF": 187,
+        "FDS": 12471
+      },
+      "MDF": {
+        "MDS": 1090,
+        "OCF": 15951,
+        "FDS": 8115
+      },
+      "Textile": {
+        "MDS": 10686,
+        "OCF": 1981,
+        "FDS": 1946
+      },
+      "Outdoor Furniture": {
+        "MDS": 1811,
+        "OCF": 1122,
+        "FDS": 1637
+      },
+      "Office Furniture": {
+        "MDS": 566,
+        "OCF": 2323,
+        "FDS": 3813
+      },
+      "Decor": {
+        "MDS": 5148,
+        "OCF": 2334,
+        "FDS": 8557
+      },
+      "Steel": {
+        "MDS": 695,
+        "OCF": 1366,
+        "FDS": 4679
+      },
+      "Lighting": {
+        "MDS": 4201,
+        "OCF": 8244,
+        "FDS": 1420
+      },
+      "Sports": {
+        "MDS": 14,
+        "OCF": 188,
+        "FDS": 1102
+      },
+      "Baby & Kids": {
+        "MDS": 1148,
+        "OCF": 602,
+        "FDS": 975
+      },
+      "Kitchen": {
+        "MDS": 1658,
+        "OCF": 515,
+        "FDS": 2541
+      },
+      "Doors": {
+        "MDS": 77,
+        "OCF": 3,
+        "FDS": 215
+      },
+      "Bathroom": {
+        "MDS": 60,
+        "OCF": 62,
+        "FDS": 270
+      },
+      "Electronics": {
+        "MDS": 0,
+        "OCF": 0,
+        "FDS": 101
+      },
+      "Tools": {
+        "MDS": 59,
+        "OCF": 6,
+        "FDS": 76
+      },
+      "Pets": {
+        "MDS": 10,
+        "OCF": 1,
+        "FDS": 13
+      },
+      "Gaming": {
+        "MDS": 5,
+        "OCF": 8,
+        "FDS": 7
+      },
+      "Gift Vouchers": {
+        "MDS": 5,
+        "OCF": 0,
+        "FDS": 0
+      },
+      "Home Improvements": {
+        "MDS": 16,
+        "OCF": 0,
+        "FDS": 3
+      }
+    }
+  },
+  "sku_sla_increase": [
+    {
+      "sku": "ELOSTAZLE164",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 34,
+      "gmv": 469843.12,
+      "assigned_avg": 19.9,
+      "actual_avg": 26.0,
+      "actual_p90": 50.4,
+      "gap_avg": 6.09,
+      "gap_p90": 30.52
+    },
+    {
+      "sku": "ELOSTAZLE134",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 46,
+      "gmv": 247848.01,
+      "assigned_avg": 19.8,
+      "actual_avg": 23.8,
+      "actual_p90": 49.5,
+      "gap_avg": 3.98,
+      "gap_p90": 29.67
+    },
+    {
+      "sku": "JOUFURH528052190",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 59,
+      "gmv": 1244959.76,
+      "assigned_avg": 16.1,
+      "actual_avg": 23.2,
+      "actual_p90": 44.0,
+      "gap_avg": 7.05,
+      "gap_p90": 27.88
+    },
+    {
+      "sku": "JOUFURH94229",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 43,
+      "gmv": 401527.17,
+      "assigned_avg": 16.8,
+      "actual_avg": 20.0,
+      "actual_p90": 44.4,
+      "gap_avg": 3.19,
+      "gap_p90": 27.61
+    },
+    {
+      "sku": "ZIFUR5",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 83,
+      "gmv": 2036639.73,
+      "assigned_avg": 25.7,
+      "actual_avg": 34.0,
+      "actual_p90": 52.0,
+      "gap_avg": 8.33,
+      "gap_p90": 26.29
+    },
+    {
+      "sku": "MAU3076",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 43,
+      "gmv": 875550.84,
+      "assigned_avg": 16.8,
+      "actual_avg": 19.1,
+      "actual_p90": 42.6,
+      "gap_avg": 2.3,
+      "gap_p90": 25.81
+    },
+    {
+      "sku": "JOUFURH528052201",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 49,
+      "gmv": 980723.78,
+      "assigned_avg": 10.8,
+      "actual_avg": 19.9,
+      "actual_p90": 35.0,
+      "gap_avg": 9.1,
+      "gap_p90": 24.2
+    },
+    {
+      "sku": "KOOOZ.49",
+      "seller": "Khashab Zan",
+      "module": "FDS",
+      "items_closed": 101,
+      "gmv": 1480003.75,
+      "assigned_avg": 15.3,
+      "actual_avg": 23.1,
+      "actual_p90": 39.0,
+      "gap_avg": 7.81,
+      "gap_p90": 23.68
+    },
+    {
+      "sku": "JOUFURH528052406",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 61,
+      "gmv": 1393104.31,
+      "assigned_avg": 19.4,
+      "actual_avg": 21.8,
+      "actual_p90": 43.0,
+      "gap_avg": 2.43,
+      "gap_p90": 23.62
+    },
+    {
+      "sku": "ELOSTAZLE167",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 64,
+      "gmv": 323235.94,
+      "assigned_avg": 20.6,
+      "actual_avg": 21.9,
+      "actual_p90": 44.1,
+      "gap_avg": 1.3,
+      "gap_p90": 23.51
+    },
+    {
+      "sku": "CF.FUR.13-2B",
+      "seller": "Couch Furniture",
+      "module": "OCF",
+      "items_closed": 42,
+      "gmv": 945396.8,
+      "assigned_avg": 17.0,
+      "actual_avg": 21.4,
+      "actual_p90": 40.2,
+      "gap_avg": 4.33,
+      "gap_p90": 23.18
+    },
+    {
+      "sku": "JOUFURH528052202",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 151,
+      "gmv": 3005112.4,
+      "assigned_avg": 11.2,
+      "actual_avg": 15.4,
+      "actual_p90": 34.0,
+      "gap_avg": 4.17,
+      "gap_p90": 22.82
+    },
+    {
+      "sku": "JOUFURH061112025",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 47,
+      "gmv": 191373.79,
+      "assigned_avg": 15.5,
+      "actual_avg": 23.8,
+      "actual_p90": 37.4,
+      "gap_avg": 8.34,
+      "gap_p90": 21.93
+    },
+    {
+      "sku": "ZIFUR5",
+      "seller": "Woody Stores",
+      "module": "FDS",
+      "items_closed": 98,
+      "gmv": 2331047.87,
+      "assigned_avg": 25.8,
+      "actual_avg": 36.3,
+      "actual_p90": 47.3,
+      "gap_avg": 10.5,
+      "gap_p90": 21.5
+    },
+    {
+      "sku": "JOUFURH528052203",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 36,
+      "gmv": 770387.9400000001,
+      "assigned_avg": 11.1,
+      "actual_avg": 14.7,
+      "actual_p90": 31.0,
+      "gap_avg": 3.56,
+      "gap_p90": 19.86
+    },
+    {
+      "sku": "ELOFU16",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 214,
+      "gmv": 1112550.73,
+      "assigned_avg": 20.2,
+      "actual_avg": 22.0,
+      "actual_p90": 40.0,
+      "gap_avg": 1.77,
+      "gap_p90": 19.81
+    },
+    {
+      "sku": "MAU3074",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 207,
+      "gmv": 2617626.35,
+      "assigned_avg": 16.3,
+      "actual_avg": 18.6,
+      "actual_p90": 36.0,
+      "gap_avg": 2.33,
+      "gap_p90": 19.7
+    },
+    {
+      "sku": "COYFSR8",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 87,
+      "gmv": 1849588.2,
+      "assigned_avg": 12.7,
+      "actual_avg": 17.6,
+      "actual_p90": 32.4,
+      "gap_avg": 4.9,
+      "gap_p90": 19.66
+    },
+    {
+      "sku": "COFUR1013",
+      "seller": "Couch Furniture",
+      "module": "OCF",
+      "items_closed": 74,
+      "gmv": 1757773.74,
+      "assigned_avg": 17.2,
+      "actual_avg": 21.4,
+      "actual_p90": 36.4,
+      "gap_avg": 4.19,
+      "gap_p90": 19.17
+    },
+    {
+      "sku": "KF44",
+      "seller": "KF.Wood",
+      "module": "FDS",
+      "items_closed": 37,
+      "gmv": 902643.08,
+      "assigned_avg": 26.7,
+      "actual_avg": 34.0,
+      "actual_p90": 45.8,
+      "gap_avg": 7.32,
+      "gap_p90": 19.1
+    },
+    {
+      "sku": "MAU3081",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 103,
+      "gmv": 930930.32,
+      "assigned_avg": 16.6,
+      "actual_avg": 17.0,
+      "actual_p90": 35.6,
+      "gap_avg": 0.37,
+      "gap_p90": 18.99
+    },
+    {
+      "sku": "ELOSTAZLE142",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 59,
+      "gmv": 812829.5,
+      "assigned_avg": 20.3,
+      "actual_avg": 20.8,
+      "actual_p90": 39.2,
+      "gap_avg": 0.46,
+      "gap_p90": 18.86
+    },
+    {
+      "sku": "ELOSTAZLE143",
+      "seller": "Elostaz Furniture",
+      "module": "FDS",
+      "items_closed": 30,
+      "gmv": 381249.86,
+      "assigned_avg": 21.7,
+      "actual_avg": 26.6,
+      "actual_p90": 40.5,
+      "gap_avg": 4.9,
+      "gap_p90": 18.77
+    },
+    {
+      "sku": "COYFSR8",
+      "seller": "Joint For Furniture",
+      "module": "OCF",
+      "items_closed": 32,
+      "gmv": 601579.6,
+      "assigned_avg": 13.3,
+      "actual_avg": 15.7,
+      "actual_p90": 32.0,
+      "gap_avg": 2.41,
+      "gap_p90": 18.72
+    },
+    {
+      "sku": "BETKK4",
+      "seller": "Bedaya",
+      "module": "FDS",
+      "items_closed": 30,
+      "gmv": 244589.75,
+      "assigned_avg": 19.6,
+      "actual_avg": 20.2,
+      "actual_p90": 38.3,
+      "gap_avg": 0.53,
+      "gap_p90": 18.67
+    }
+  ],
+  "sku_sla_decrease": [
+    {
+      "sku": "RLTLB31329",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 33,
+      "gmv": 41403.87,
+      "assigned_avg": 24.1,
+      "actual_avg": 2.5,
+      "actual_p90": 5.0,
+      "gap_avg": -21.64,
+      "gap_p90": -19.09
+    },
+    {
+      "sku": "RLTLB31327",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 53,
+      "gmv": 15676.77,
+      "assigned_avg": 17.5,
+      "actual_avg": 1.2,
+      "actual_p90": 1.8,
+      "gap_avg": -16.3,
+      "gap_p90": -15.71
+    },
+    {
+      "sku": "RLTLB31325",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 31,
+      "gmv": 13402.69,
+      "assigned_avg": 21.5,
+      "actual_avg": 2.4,
+      "actual_p90": 6.0,
+      "gap_avg": -19.13,
+      "gap_p90": -15.55
+    },
+    {
+      "sku": "RLTLB31328",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 30,
+      "gmv": 8390.56,
+      "assigned_avg": 20.3,
+      "actual_avg": 2.0,
+      "actual_p90": 7.0,
+      "gap_avg": -18.3,
+      "gap_p90": -13.33
+    },
+    {
+      "sku": "RLSLB024",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 41,
+      "gmv": 15055.62,
+      "assigned_avg": 13.7,
+      "actual_avg": 1.4,
+      "actual_p90": 2.0,
+      "gap_avg": -12.32,
+      "gap_p90": -11.71
+    },
+    {
+      "sku": "SIGNB0DYF7ND8W",
+      "seller": "Signoola",
+      "module": "OCF",
+      "items_closed": 33,
+      "gmv": 12947.0,
+      "assigned_avg": 12.8,
+      "actual_avg": 1.1,
+      "actual_p90": 1.8,
+      "gap_avg": -11.73,
+      "gap_p90": -10.99
+    },
+    {
+      "sku": "TAOA81867",
+      "seller": "Trending Art Online",
+      "module": "OCF",
+      "items_closed": 53,
+      "gmv": 617957.04,
+      "assigned_avg": 15.8,
+      "actual_avg": 2.7,
+      "actual_p90": 5.0,
+      "gap_avg": -13.09,
+      "gap_p90": -10.81
+    },
+    {
+      "sku": "RLUDA050",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 38,
+      "gmv": 8317.76,
+      "assigned_avg": 12.7,
+      "actual_avg": 0.8,
+      "actual_p90": 2.0,
+      "gap_avg": -11.84,
+      "gap_p90": -10.68
+    },
+    {
+      "sku": "BQTPB-29",
+      "seller": "Beitak",
+      "module": "OCF",
+      "items_closed": 165,
+      "gmv": 1048591.27,
+      "assigned_avg": 15.1,
+      "actual_avg": 2.6,
+      "actual_p90": 5.0,
+      "gap_avg": -12.52,
+      "gap_p90": -10.08
+    },
+    {
+      "sku": "RLTLB31339",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 46,
+      "gmv": 91273.14,
+      "assigned_avg": 15.3,
+      "actual_avg": 2.1,
+      "actual_p90": 5.5,
+      "gap_avg": -13.28,
+      "gap_p90": -9.85
+    },
+    {
+      "sku": "SIGNB0DYF7W699",
+      "seller": "Signoola",
+      "module": "OCF",
+      "items_closed": 37,
+      "gmv": 15490.42,
+      "assigned_avg": 12.8,
+      "actual_avg": 1.6,
+      "actual_p90": 3.0,
+      "gap_avg": -11.11,
+      "gap_p90": -9.76
+    },
+    {
+      "sku": "HSOFLE29426",
+      "seller": "Home Smart Office",
+      "module": "OCF",
+      "items_closed": 31,
+      "gmv": 67863.18,
+      "assigned_avg": 16.7,
+      "actual_avg": 5.0,
+      "actual_p90": 7.0,
+      "gap_avg": -11.65,
+      "gap_p90": -9.68
+    },
+    {
+      "sku": "RLSC019",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 31,
+      "gmv": 9556.11,
+      "assigned_avg": 13.7,
+      "actual_avg": 1.6,
+      "actual_p90": 4.0,
+      "gap_avg": -12.03,
+      "gap_p90": -9.68
+    },
+    {
+      "sku": "Beitak.B52",
+      "seller": "Beitak",
+      "module": "OCF",
+      "items_closed": 159,
+      "gmv": 470026.0,
+      "assigned_avg": 13.5,
+      "actual_avg": 2.5,
+      "actual_p90": 4.2,
+      "gap_avg": -11.04,
+      "gap_p90": -9.3
+    },
+    {
+      "sku": "RLTLB31025",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 91,
+      "gmv": 168502.55,
+      "assigned_avg": 13.2,
+      "actual_avg": 2.0,
+      "actual_p90": 4.0,
+      "gap_avg": -11.22,
+      "gap_p90": -9.18
+    },
+    {
+      "sku": "RL-LIGH-200",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 48,
+      "gmv": 13383.18,
+      "assigned_avg": 13.4,
+      "actual_avg": 2.4,
+      "actual_p90": 4.3,
+      "gap_avg": -11.02,
+      "gap_p90": -9.07
+    },
+    {
+      "sku": "TA.HAl.Mk20",
+      "seller": "Trending Art Online",
+      "module": "OCF",
+      "items_closed": 34,
+      "gmv": 202447.09,
+      "assigned_avg": 11.8,
+      "actual_avg": 2.0,
+      "actual_p90": 3.7,
+      "gap_avg": -9.79,
+      "gap_p90": -8.06
+    },
+    {
+      "sku": "TAO.A120",
+      "seller": "Trending Art Online",
+      "module": "OCF",
+      "items_closed": 33,
+      "gmv": 100146.70999999999,
+      "assigned_avg": 17.9,
+      "actual_avg": 4.5,
+      "actual_p90": 10.0,
+      "gap_avg": -13.39,
+      "gap_p90": -7.94
+    },
+    {
+      "sku": "BEITAKB78",
+      "seller": "Beitak",
+      "module": "OCF",
+      "items_closed": 87,
+      "gmv": 118312.92,
+      "assigned_avg": 11.3,
+      "actual_avg": 2.3,
+      "actual_p90": 3.4,
+      "gap_avg": -8.97,
+      "gap_p90": -7.91
+    },
+    {
+      "sku": "MAKFUOF8224",
+      "seller": "Makany Furniture",
+      "module": "OCF",
+      "items_closed": 61,
+      "gmv": 366338.18,
+      "assigned_avg": 12.8,
+      "actual_avg": 2.4,
+      "actual_p90": 5.0,
+      "gap_avg": -10.31,
+      "gap_p90": -7.75
+    },
+    {
+      "sku": "MAKFUOF51426",
+      "seller": "Makany Furniture",
+      "module": "OCF",
+      "items_closed": 66,
+      "gmv": 350302.5,
+      "assigned_avg": 12.7,
+      "actual_avg": 2.3,
+      "actual_p90": 5.0,
+      "gap_avg": -10.36,
+      "gap_p90": -7.67
+    },
+    {
+      "sku": "AYMD42",
+      "seller": "Aya Mortada Designs",
+      "module": "FDS",
+      "items_closed": 40,
+      "gmv": 12917.44,
+      "assigned_avg": 14.4,
+      "actual_avg": 4.8,
+      "actual_p90": 7.0,
+      "gap_avg": -9.65,
+      "gap_p90": -7.45
+    },
+    {
+      "sku": "RLTLB31026",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 83,
+      "gmv": 157137.77,
+      "assigned_avg": 12.4,
+      "actual_avg": 2.0,
+      "actual_p90": 5.0,
+      "gap_avg": -10.46,
+      "gap_p90": -7.42
+    },
+    {
+      "sku": "RL-LIGH-30",
+      "seller": "El Rawda lighting",
+      "module": "OCF",
+      "items_closed": 68,
+      "gmv": 25239.76,
+      "assigned_avg": 10.2,
+      "actual_avg": 1.7,
+      "actual_p90": 3.0,
+      "gap_avg": -8.46,
+      "gap_p90": -7.19
+    },
+    {
+      "sku": "BQTPB-74",
+      "seller": "Beitak",
+      "module": "OCF",
+      "items_closed": 48,
+      "gmv": 216773.1,
+      "assigned_avg": 11.4,
+      "actual_avg": 2.4,
+      "actual_p90": 4.3,
+      "gap_avg": -9.04,
+      "gap_p90": -7.1
+    }
+  ],
+  "sku_sla_summary": {
+    "evaluable": 495,
+    "need_increase": 216,
+    "need_decrease": 96,
+    "sla_well_set": 183,
+    "avg_assigned_sla": 12.66,
+    "avg_actual_lt": 8.83
+  }
+}</script>
+
+<script>
+(function(){
+  'use strict';
+  // ------- Safe data load -------
+  let D;
+  try{
+    D = JSON.parse(document.getElementById('dashboardData').textContent);
+  }catch(e){
+    document.body.insertAdjacentHTML('afterbegin','<div class="err">Data load error: '+e.message+'</div>');
+    return;
+  }
+
+  // ------- Helpers -------
+  const fmtMoney = n => 'EGP ' + (n>=1e6 ? (n/1e6).toFixed(1)+'M' : n>=1e3 ? (n/1e3).toFixed(0)+'K' : n.toFixed(0));
+  const fmtMoneyFull = n => 'EGP ' + n.toLocaleString('en-US',{maximumFractionDigits:0});
+  const fmtNum = n => n.toLocaleString('en-US');
+  const $ = id => document.getElementById(id);
+
+  // ------- KPI tiles (synchronous - render immediately) -------
+  const kpis = [
+    {label:'Overall GTN', value:D.headline.gtn.toFixed(2)+'%', sub:'End-to-end (Status=Delivered)', tone: D.headline.gtn>=75?'ok': D.headline.gtn>=70?'warn':'danger'},
+    {label:'Seller GTN', value:(D.headline.gtn_seller!=null?D.headline.gtn_seller.toFixed(2):'-')+'%', sub:'Seller responsibility (module closure)', tone: D.headline.gtn_seller>=80?'ok': D.headline.gtn_seller>=70?'warn':'danger'},
+    {label:'Delivery Rate', value:D.headline.dr.toFixed(2)+'%', sub:'End-to-end ('+fmtNum(D.headline.items_delivered)+'/'+fmtNum(D.headline.items_total)+')', tone: D.headline.dr>=80?'ok':'warn'},
+    {label:'Seller Delivery Rate', value:(D.headline.dr_seller!=null?D.headline.dr_seller.toFixed(2):'-')+'%', sub:'Reached module closure', tone: D.headline.dr_seller>=85?'ok': D.headline.dr_seller>=75?'warn':'danger'},
+    {label:'Seller SLA %', value:D.headline.sla.toFixed(2)+'%', sub:'Closure on/before Expected (module)', tone: D.headline.sla>=80?'ok':'warn'},
+    {label:'Total GMV', value:fmtMoney(D.headline.gmv_total), sub:'8 months', tone:''},
+    {label:'GMV Lost', value:fmtMoney(D.headline.gmv_lost), sub:((D.headline.gmv_lost/D.headline.gmv_total)*100).toFixed(1)+'% of total', tone:'danger'},
+    {label:'Avg Seller LT', value:D.headline.avg_seller_lt.toFixed(1)+' d', sub:'Confirmed to Closure', tone: D.headline.avg_seller_lt<=8?'ok':'warn'},
+  ];
+  $('kpiRow').innerHTML = kpis.map(k=>'<div class="kpi"><div class="label">'+k.label+'</div><div class="value '+k.tone+'">'+k.value+'</div><div class="sub">'+k.sub+'</div></div>').join('');
+
+  // ------- Root causes -------
+  const rc = [
+    {n:1,title:'Cancellations - "'+(D.cancel_reasons[0]?.reason||'')+'"', mech:'Customer disengages during seller lead time or stock unavailability surfaces post-confirmation', impact:D.headline.gmv_cancel, owner:'KAM + Issue Resolution'},
+    {n:2,title:'Rejections - "'+(D.reject_reasons[0]?.reason||'')+'"', mech:'Vendor rejects after order confirmation - typically stock/quality discovery', impact:D.headline.gmv_reject, owner:'KAM + Commercial'},
+    {n:3,title:'Returns - "'+(D.return_reasons[0]?.reason||'')+'"', mech:'Quality / expectation mismatch surfacing post-delivery', impact:D.headline.gmv_return, owner:'QRR + Commercial'},
+    {n:4,title:'SLA breaches degrading downstream conversion', mech:'Late closures correlate with higher cancel/return rates', impact:null, owner:'KAM + IR'},
+    {n:5,title:'Overloaded sellers dragging SLA', mech:(D.capacity_segments.find(function(s){return s.name==='Overloaded'})||{sellers:0}).sellers+' sellers high volume + sub-median SLA', impact:null, owner:'Vendor Ops'},
+    {n:6,title:'SKU reassignments to weaker sellers', mech:D.reassign_summary.declined+' SKUs declined post-transfer (avg '+Math.abs(D.reassign_summary.avg_decline)+' pp drop)', impact:null, owner:'Commercial + Vendor Ops'},
+  ];
+  $('rootCauses').innerHTML = rc.map(function(r){
+    return '<div class="root-cause"><div class="num-tag">'+r.n+'</div>'+
+      '<div class="body"><div class="title">'+r.title+'</div><div class="mech">'+r.mech+' &middot; <strong>Owner:</strong> '+r.owner+'</div></div>'+
+      '<div class="impact">'+(r.impact?'<div class="small">GMV impact</div><div class="v">'+fmtMoney(r.impact)+'</div>':'<div class="small">See breakdown</div>')+'</div></div>';
+  }).join('');
+
+  // ------- Funnel HTML -------
+  $('funnelOverall').innerHTML = D.funnel.map(function(s,i){
+    return '<div class="funnel-row"><div class="stage">'+s.stage+'</div>'+
+      '<div><div class="funnel-bar" style="width:'+s.pct+'%">'+s.pct+'%</div></div>'+
+      '<div class="num">'+fmtNum(s.count)+(i>0?'<div class="drop">drop '+s.drop_pct+'% (-'+fmtNum(s.drop_n)+')</div>':'')+'</div></div>';
+  }).join('');
+
+  // ------- Tables -------
+  $('modTable').innerHTML = '<thead><tr><th>Module</th><th class="num">Items</th><th class="num">GMV</th><th class="num" style="color:var(--accent)">Seller GTN %</th><th class="num">Overall GTN %</th><th class="num" style="color:var(--accent)">Seller DR %</th><th class="num">Overall DR %</th><th class="num">Seller SLA %</th><th class="num">Seller LT</th><th class="num">Logistics LT</th></tr></thead><tbody>'+
+    D.module.map(function(m){return '<tr><td><strong>'+m.name+'</strong></td><td class="num">'+fmtNum(m.items)+'</td><td class="num">'+fmtMoneyFull(m.gmv)+'</td><td class="num"><span class="badge '+(m.gtn_seller>=80?'b-good':m.gtn_seller>=70?'b-warn':'b-bad')+'">'+(m.gtn_seller!=null?m.gtn_seller.toFixed(2):'-')+'</span></td><td class="num">'+m.gtn.toFixed(2)+'</td><td class="num"><span class="badge '+(m.dr_seller>=85?'b-good':m.dr_seller>=75?'b-warn':'b-bad')+'">'+(m.dr_seller!=null?m.dr_seller.toFixed(2):'-')+'</span></td><td class="num">'+m.dr.toFixed(2)+'</td><td class="num">'+m.sla.toFixed(2)+'</td><td class="num">'+m.avg_seller_lt.toFixed(2)+'</td><td class="num">'+(m.avg_logistics_lt?m.avg_logistics_lt.toFixed(2):'-')+'</td></tr>';}).join('')+'</tbody>';
+
+  $('slaModTable').innerHTML = '<thead><tr><th>Module</th><th class="num">Items</th><th class="num">SLA Compliance %</th></tr></thead><tbody>'+
+    D.module.map(function(m){return '<tr><td><strong>'+m.name+'</strong></td><td class="num">'+fmtNum(m.items)+'</td><td class="num"><span class="badge '+(m.sla>=80?'b-good':m.sla>=70?'b-warn':'b-bad')+'">'+m.sla.toFixed(2)+'</span></td></tr>';}).join('')+'</tbody>';
+
+  $('regionList').innerHTML = '<table><thead><tr><th>Region</th><th class="num">Items</th><th class="num">GMV</th><th class="num">GTN %</th><th class="num">DR %</th><th class="num">Gap</th></tr></thead><tbody>'+
+    D.region.map(function(r){return '<tr><td><strong>'+r.name+'</strong></td><td class="num">'+fmtNum(r.items)+'</td><td class="num">'+fmtMoney(r.gmv)+'</td><td class="num"><span class="badge '+(r.gtn>=D.headline.gtn?'b-good':'b-bad')+'">'+r.gtn.toFixed(2)+'</span></td><td class="num">'+r.dr.toFixed(2)+'</td><td class="num" style="color:'+(r.gap>=0?'var(--good)':'var(--bad)')+'">'+(r.gap>0?'+':'')+r.gap.toFixed(2)+' pp</td></tr>';}).join('')+'</tbody></table>';
+
+  $('payTable').innerHTML = '<thead><tr><th>Method</th><th class="num">Items</th><th class="num">GMV</th><th class="num">GTN %</th><th class="num">DR %</th><th class="num">Cancel</th><th class="num">Return</th></tr></thead><tbody>'+
+    D.payment.map(function(p){return '<tr><td><strong>'+p.name+'</strong></td><td class="num">'+fmtNum(p.items)+'</td><td class="num">'+fmtMoney(p.gmv)+'</td><td class="num">'+p.gtn.toFixed(2)+'</td><td class="num">'+p.dr.toFixed(2)+'</td><td class="num">'+p.cancel_rate.toFixed(2)+'</td><td class="num">'+p.return_rate.toFixed(2)+'</td></tr>';}).join('')+'</tbody>';
+
+  // Capacity segments - show BOTH Seller GTN and Overall GTN
+  const segMap = {'Overloaded':'overload','Underutilized':'under','Strong':'strong','Balanced':'balanced','At Risk':'risk'};
+  $('capSegments').innerHTML = D.capacity_segments.map(function(s){
+    return '<div class="seg-card '+(segMap[s.name]||'balanced')+'"><div class="lbl">'+s.name+'</div><div class="num">'+s.sellers+'</div>'+
+      '<div class="stat-line"><span>GMV</span><strong>'+fmtMoney(s.gmv)+'</strong></div>'+
+      '<div class="stat-line"><span>Seller GTN</span><strong style="color:var(--accent)">'+s.gtn.toFixed(2)+'%</strong></div>'+
+      '<div class="stat-line"><span>Overall GTN</span><strong>'+(s.gtn_overall!=null?s.gtn_overall.toFixed(2)+'%':'-')+'</strong></div>'+
+      '<div class="stat-line"><span>Avg Seller SLA</span><strong>'+s.sla.toFixed(2)+'%</strong></div></div>';
+  }).join('');
+
+  $('overloadTable').innerHTML = '<thead><tr><th>Seller</th><th>Module</th><th class="num">Avg/mo</th><th class="num" style="color:var(--accent)">Seller GTN</th><th class="num">Overall GTN</th><th class="num">Seller SLA %</th><th class="num">GMV</th></tr></thead><tbody>'+
+    D.overloaded_sellers.map(function(s){return '<tr><td>'+s.name+'</td><td><span class="badge b-info">'+(s.module||'-')+'</span></td><td class="num">'+fmtNum(s.avg_monthly)+'</td><td class="num" style="color:var(--accent);font-weight:600">'+s.gtn.toFixed(2)+'</td><td class="num">'+(s.gtn_overall!=null?s.gtn_overall.toFixed(2):'-')+'</td><td class="num"><span class="badge b-bad">'+s.sla.toFixed(2)+'</span></td><td class="num">'+fmtMoney(s.gmv)+'</td></tr>';}).join('')+'</tbody>';
+
+  $('underutilTable').innerHTML = '<thead><tr><th>Seller</th><th>Module</th><th class="num">Avg/mo</th><th class="num" style="color:var(--accent)">Seller GTN</th><th class="num">Overall GTN</th><th class="num">Seller SLA %</th><th class="num">GMV</th></tr></thead><tbody>'+
+    D.underutilized_sellers.map(function(s){return '<tr><td>'+s.name+'</td><td><span class="badge b-info">'+(s.module||'-')+'</span></td><td class="num">'+fmtNum(s.avg_monthly)+'</td><td class="num"><span class="badge b-good">'+s.gtn.toFixed(2)+'</span></td><td class="num">'+(s.gtn_overall!=null?s.gtn_overall.toFixed(2):'-')+'</td><td class="num"><span class="badge b-good">'+s.sla.toFixed(2)+'</span></td><td class="num">'+fmtMoney(s.gmv)+'</td></tr>';}).join('')+'</tbody>';
+
+  $('topSellersTable').innerHTML = '<thead><tr><th>Seller</th><th>Module</th><th class="num">Items</th><th class="num">GMV</th><th class="num" style="color:var(--accent)">Seller GTN</th><th class="num">Overall GTN</th><th class="num">Seller SLA %</th></tr></thead><tbody>'+
+    D.top_sellers_gmv.map(function(s){return '<tr><td>'+s.name+'</td><td><span class="badge b-info">'+(s.module||'-')+'</span></td><td class="num">'+fmtNum(s.items)+'</td><td class="num">'+fmtMoney(s.gmv)+'</td><td class="num"><span class="badge '+(s.gtn>=80?'b-good':s.gtn>=70?'b-warn':'b-bad')+'">'+s.gtn.toFixed(2)+'</span></td><td class="num"><span class="badge '+(s.gtn_overall>=75?'b-good':s.gtn_overall>=70?'b-warn':'b-bad')+'">'+(s.gtn_overall!=null?s.gtn_overall.toFixed(2):'-')+'</span></td><td class="num">'+s.sla.toFixed(2)+'</td></tr>';}).join('')+'</tbody>';
+
+  $('worstSellersTable').innerHTML = '<thead><tr><th>Seller</th><th>Module</th><th class="num">Items</th><th class="num">GMV</th><th class="num" style="color:var(--accent)">Seller GTN</th><th class="num">Overall GTN</th><th class="num">Seller SLA %</th></tr></thead><tbody>'+
+    D.worst_sellers_gtn.map(function(s){return '<tr><td>'+s.name+'</td><td><span class="badge b-info">'+(s.module||'-')+'</span></td><td class="num">'+fmtNum(s.items)+'</td><td class="num">'+fmtMoney(s.gmv)+'</td><td class="num"><span class="badge b-bad">'+s.gtn.toFixed(2)+'</span></td><td class="num"><span class="badge '+(s.gtn_overall>=70?'b-warn':'b-bad')+'">'+(s.gtn_overall!=null?s.gtn_overall.toFixed(2):'-')+'</span></td><td class="num">'+s.sla.toFixed(2)+'</td></tr>';}).join('')+'</tbody>';
+
+  // ------- Material list with full loss rates -------
+  $('materialList').innerHTML = '<table><thead><tr><th>Material</th><th class="num">Items</th><th class="num">GMV</th><th class="num">GTN %</th><th class="num">Gap</th><th class="num">Cancel %</th><th class="num">Reject %</th><th class="num">Return %</th><th class="num">DR %</th></tr></thead><tbody>'+
+    D.material.map(function(r){return '<tr><td><strong>'+r.name+'</strong></td><td class="num">'+fmtNum(r.items)+'</td><td class="num">'+fmtMoney(r.gmv)+'</td><td class="num"><span class="badge '+(r.gtn>=D.headline.gtn?'b-good':'b-bad')+'">'+r.gtn.toFixed(2)+'</span></td><td class="num" style="color:'+(r.gap>=0?'var(--good)':'var(--bad)')+'">'+(r.gap>0?'+':'')+r.gap.toFixed(2)+'</td><td class="num"><span class="badge '+(r.cancel_rate>15?'b-bad':r.cancel_rate>10?'b-warn':'b-good')+'">'+r.cancel_rate.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.reject_rate>10?'b-bad':r.reject_rate>5?'b-warn':'b-good')+'">'+r.reject_rate.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.return_rate>5?'b-bad':r.return_rate>2?'b-warn':'b-good')+'">'+r.return_rate.toFixed(2)+'</span></td><td class="num">'+r.dr.toFixed(2)+'</td></tr>';}).join('')+'</tbody></table>';
+
+  // ------- Material x Module heatmap (GTN by material per module) -------
+  (function(){
+    const mm = D.material_module;
+    let html = '<table><thead><tr><th>Material</th>'+mm.modules.map(function(m){return '<th class="num">'+m+'</th>';}).join('')+'</tr></thead><tbody>';
+    mm.materials.forEach(function(mat){
+      html += '<tr><td><strong>'+mat+'</strong></td>';
+      mm.modules.forEach(function(mod){
+        const v = mm.gtn[mat] && mm.gtn[mat][mod];
+        const items = mm.items[mat] && mm.items[mat][mod];
+        if (v === null || v === undefined || items < 20){
+          html += '<td class="num" style="color:#94A3B8">-</td>';
+        } else {
+          // color scale
+          let bg = '#FEE2E2', fg = '#991B1B';
+          if (v >= 80){ bg='#DCFCE7'; fg='#15803D'; }
+          else if (v >= 70){ bg='#FEF3C7'; fg='#B45309'; }
+          html += '<td class="num" style="background:'+bg+';color:'+fg+';font-weight:600" title="'+items+' items">'+v.toFixed(1)+'</td>';
+        }
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    $('materialModuleHeat').innerHTML = html;
+  })();
+
+  // ------- SKU KPI tiles -------
+  $('skuKpis').innerHTML = [
+    {label:'SKUs Evaluated', value:fmtNum(D.sku_summary.total_skus_evaluated), sub:'>=10 items / SKU', tone:''},
+    {label:'SKUs <70% GTN', value:fmtNum(D.sku_summary.skus_below_70_gtn), sub:D.sku_summary.pct_skus_below_70.toFixed(1)+'% of evaluated', tone:'danger'},
+    {label:'GMV in Below-70 SKUs', value:fmtMoney(D.sku_summary.gmv_in_below_70), sub:'addressable pool', tone:'warn'},
+    {label:'Worst Material GTN', value:D.material_summary.worst_material_gtn.toFixed(2)+'%', sub:D.material_summary.worst_material, tone:'danger'},
+  ].map(function(k){return '<div class="card"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600">'+k.label+'</div><div style="font-size:24px;font-weight:700;color:'+(k.tone==='danger'?'var(--bad)':k.tone==='warn'?'var(--warn)':'var(--ink)')+';margin-top:4px">'+k.value+'</div><div style="font-size:11px;color:var(--muted)">'+k.sub+'</div></div>';}).join('');
+
+  // ------- Top SKUs list -------
+  $('topSkusList').innerHTML = '<table><thead><tr><th>SKU</th><th>Seller</th><th>Module</th><th class="num">Items</th><th class="num">GMV</th><th class="num" style="color:var(--accent)">Seller GTN</th><th class="num">Overall GTN</th><th class="num">Cancel %</th><th class="num">Reject %</th><th class="num">Return %</th></tr></thead><tbody>'+
+    D.top_skus_gmv.map(function(r){return '<tr><td><strong>'+r.sku+'</strong></td><td>'+r.seller+'</td><td><span class="badge b-info">'+(r.module||'-')+'</span></td><td class="num">'+fmtNum(r.items)+'</td><td class="num">'+fmtMoney(r.gmv)+'</td><td class="num"><span class="badge '+(r.gtn_seller>=80?'b-good':r.gtn_seller>=70?'b-warn':'b-bad')+'">'+(r.gtn_seller!=null?r.gtn_seller.toFixed(2):'-')+'</span></td><td class="num"><span class="badge '+(r.gtn>=75?'b-good':r.gtn>=70?'b-warn':'b-bad')+'">'+r.gtn.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.cancel_rate>15?'b-bad':r.cancel_rate>10?'b-warn':'b-good')+'">'+r.cancel_rate.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.reject_rate>10?'b-bad':r.reject_rate>5?'b-warn':'b-good')+'">'+r.reject_rate.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.return_rate>5?'b-bad':r.return_rate>2?'b-warn':'b-good')+'">'+r.return_rate.toFixed(2)+'</span></td></tr>';}).join('')+'</tbody></table>';
+
+  // ------- Worst SKUs list -------
+  $('worstSkusList').innerHTML = '<table><thead><tr><th>SKU</th><th>Seller</th><th>Module</th><th class="num">Items</th><th class="num">GMV</th><th class="num" style="color:var(--accent)">Seller GTN</th><th class="num">Overall GTN</th><th class="num">Cancel %</th><th class="num">Reject %</th><th class="num">Return %</th></tr></thead><tbody>'+
+    D.worst_skus_gtn.map(function(r){return '<tr><td><strong>'+r.sku+'</strong></td><td>'+r.seller+'</td><td><span class="badge b-info">'+(r.module||'-')+'</span></td><td class="num">'+fmtNum(r.items)+'</td><td class="num">'+fmtMoney(r.gmv)+'</td><td class="num"><span class="badge b-bad">'+(r.gtn_seller!=null?r.gtn_seller.toFixed(2):'-')+'</span></td><td class="num"><span class="badge b-bad">'+r.gtn.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.cancel_rate>15?'b-bad':r.cancel_rate>10?'b-warn':'b-good')+'">'+r.cancel_rate.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.reject_rate>10?'b-bad':r.reject_rate>5?'b-warn':'b-good')+'">'+r.reject_rate.toFixed(2)+'</span></td><td class="num"><span class="badge '+(r.return_rate>5?'b-bad':r.return_rate>2?'b-warn':'b-good')+'">'+r.return_rate.toFixed(2)+'</span></td></tr>';}).join('')+'</tbody></table>';
+
+  // ------- SKU SLA Right-Sizing -------
+  (function(){
+    const s = D.sku_sla_summary;
+    $('skuSlaKpis').innerHTML = [
+      {label:'SKUs Evaluated', value:fmtNum(s.evaluable), sub:'>=30 closed items / SKU+Seller', tone:''},
+      {label:'Need INCREASE SLA', value:fmtNum(s.need_increase), sub:'P90 actual > assigned by 2+ days', tone:'danger'},
+      {label:'Need DECREASE SLA', value:fmtNum(s.need_decrease), sub:'Assigned > P90 actual by 3+ days', tone:'warn'},
+      {label:'Avg Assigned vs Actual', value:s.avg_assigned_sla.toFixed(1)+' vs '+s.avg_actual_lt.toFixed(1)+' d', sub:'cluster average', tone:''},
+    ].map(function(k){return '<div class="card"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600">'+k.label+'</div><div style="font-size:24px;font-weight:700;color:'+(k.tone==='danger'?'var(--bad)':k.tone==='warn'?'var(--warn)':'var(--ink)')+';margin-top:4px">'+k.value+'</div><div style="font-size:11px;color:var(--muted)">'+k.sub+'</div></div>';}).join('');
+
+    $('slaIncreaseList').innerHTML = '<table><thead><tr><th>SKU</th><th>Seller</th><th>Module</th><th class="num">Closed Items</th><th class="num">GMV</th><th class="num">Assigned (d)</th><th class="num">Actual avg (d)</th><th class="num">Actual P90 (d)</th><th class="num">Gap P90 (d)</th></tr></thead><tbody>'+
+      D.sku_sla_increase.map(function(r){return '<tr><td><strong>'+r.sku+'</strong></td><td>'+r.seller+'</td><td><span class="badge b-info">'+r.module+'</span></td><td class="num">'+fmtNum(r.items_closed)+'</td><td class="num">'+fmtMoney(r.gmv)+'</td><td class="num">'+r.assigned_avg.toFixed(1)+'</td><td class="num">'+r.actual_avg.toFixed(1)+'</td><td class="num">'+r.actual_p90.toFixed(1)+'</td><td class="num"><span class="badge b-bad">+'+r.gap_p90.toFixed(1)+'</span></td></tr>';}).join('')+'</tbody></table>';
+
+    $('slaDecreaseList').innerHTML = '<table><thead><tr><th>SKU</th><th>Seller</th><th>Module</th><th class="num">Closed Items</th><th class="num">GMV</th><th class="num">Assigned (d)</th><th class="num">Actual avg (d)</th><th class="num">Actual P90 (d)</th><th class="num">Gap P90 (d)</th></tr></thead><tbody>'+
+      D.sku_sla_decrease.map(function(r){return '<tr><td><strong>'+r.sku+'</strong></td><td>'+r.seller+'</td><td><span class="badge b-info">'+r.module+'</span></td><td class="num">'+fmtNum(r.items_closed)+'</td><td class="num">'+fmtMoney(r.gmv)+'</td><td class="num">'+r.assigned_avg.toFixed(1)+'</td><td class="num">'+r.actual_avg.toFixed(1)+'</td><td class="num">'+r.actual_p90.toFixed(1)+'</td><td class="num"><span class="badge b-good">'+r.gap_p90.toFixed(1)+'</span></td></tr>';}).join('')+'</tbody></table>';
+  })();
+
+  // ------- Actions (updated for closure-gap insights) -------
+  const od = D.capacity_segments.find(function(s){return s.name==='Overloaded'})||{sellers:0};
+  const un = D.capacity_segments.find(function(s){return s.name==='Underutilized'})||{sellers:0};
+  const ocfMod = D.module.find(function(m){return m.name==='OCF'})||{};
+  const mdsMod = D.module.find(function(m){return m.name==='MDS'})||{};
+  const ocfGap = (ocfMod.gtn_seller||0) - (ocfMod.gtn||0);
+  const mdsGap = (mdsMod.gtn_seller||0) - (mdsMod.gtn||0);
+
+  const shortActs = [
+    {id:'S1',title:'Post-closure logistics war-room (NEW priority #1)',det:'Daily standup on items between RTS/Shipped/DC and Delivered. The dual-view shows post-closure loss is the biggest lever: OCF gap '+ocfGap.toFixed(1)+'pp, MDS gap '+mdsGap.toFixed(1)+'pp. War-room: Logistics + IR + Vendor Ops to clear post-closure backlog.',kpi:'Closure-gap -3pp in 30 days',owner:'Logistics + IR Lead',time:'Week 1-4'},
+    {id:'S2',title:'Lock-in fix for top cancel reason',det:'RCA workshop with KAM + Tech + Customer Ops; deploy validation rule in Seller Center within 2 weeks. Target: "'+(D.cancel_reasons[0]?.reason||'')+'".',kpi:'Cancel rate -2pp',owner:'Vendor Ops',time:'Week 1-4'},
+    {id:'S3',title:'Tighten SLA for overloaded top-25 sellers',det:'Cap order intake until backlog cleared; daily compliance dashboard; auto-escalate breaches >2 days. '+od.sellers+' overloaded sellers identified.',kpi:'Seller SLA +5pp on flagged',owner:'KAM + IR',time:'Week 1-3'},
+    {id:'S4',title:'Reverse declining SKU reassignments',det:'Reassign top-50 declined SKUs back to original seller; freeze further moves until A/B validation. '+D.reassign_summary.declined+' candidates.',kpi:'Recover 50% of GTN drop',owner:'Commercial + Vendor Ops',time:'Week 1-4'},
+    {id:'S5',title:'Escalate sellers with low Seller GTN to QRR (NEW filter)',det:'Use Seller GTN (not Overall GTN) to identify true seller-side problems. Issue 14-day improvement plan to bottom 20 sellers by Seller GTN with >=100 items.',kpi:'Bottom-20 Seller GTN +5pp',owner:'KAM + Commercial',time:'Week 1-2'},
+    {id:'S6',title:'COD risk filter for high-cancel signatures',det:'Auto-prompt Prepaid for orders matching high-cancel signature (region+category+seller cluster).',kpi:'COD cancel rate -3pp',owner:'Tech + Customer Ops',time:'Week 2-4'},
+    {id:'S7',title:'SKU-level closure gap triage (NEW)',det:'Tag each SKU as: A) Seller-side problem (low Seller GTN, small gap) - reassign/delist. B) Logistics problem (high Seller GTN, big gap) - last-mile fix. Triage top 50 worst by Seller GTN.',kpi:'50 SKUs triaged + actioned',owner:'Vendor Ops + Logistics',time:'Week 2-4'},
+    {id:'S8',title:'SKU SLA right-sizing (NEW)',det:'Increase assigned SLA on top-25 over-promised SKUs (P90 actual > assigned by 2+d) to stop pre-confirmation cancellations. Decrease assigned SLA on top-25 under-promised SKUs (assigned > P90 actual by 3+d) to sharpen customer perception. Total ' + (D.sku_sla_summary.need_increase + D.sku_sla_summary.need_decrease) + ' SKUs flagged.',kpi:'50 SKU SLAs adjusted; cancel rate -1pp on increased',owner:'Commercial + Vendor Ops',time:'Week 2-4'},
+  ];
+  const midActs = [
+    {id:'M1',title:'Vendor Tiering using Seller GTN (not Overall GTN)',det:'Tier sellers (Platinum/Gold/Silver/Watch) on Seller GTN + Seller SLA + CV. Allocate new SKUs preferentially to Tier 1. Critical: use Seller GTN so sellers are scored on what they control, not on logistics.',kpi:'+2pp overall GTN within 90d via better allocation',owner:'Vendor Ops + Commercial',time:'Day 30-90'},
+    {id:'M2',title:'OCF RTS->Delivered acceleration (HIGHEST ROI - '+ocfGap.toFixed(1)+'pp gap)',det:'SLA the pickup-from-RTS at 24h; alert at 48h; reroute under-performing carriers. OCF sellers already perform well at closure (Seller GTN '+(ocfMod.gtn_seller||0).toFixed(1)+'%); the entire '+ocfGap.toFixed(1)+'pp gap to Overall GTN is recoverable through last-mile.',kpi:'OCF Closure Gap -8pp / Logistics LT -1.5d',owner:'Logistics + IR',time:'Day 30-90'},
+    {id:'M3',title:'MDS DC->Delivered acceleration ('+mdsGap.toFixed(1)+'pp gap)',det:'Similar to OCF but DC handover side. Daily DC clearing + carrier scorecard.',kpi:'MDS Closure Gap -5pp',owner:'Logistics + IR',time:'Day 30-90'},
+    {id:'M4',title:'Last-mile carrier scorecard (NEW)',det:'Score carriers on post-closure conversion (handover -> delivered), not aggregate delivery rate. Identify and replace bottom-quartile carriers per region.',kpi:'Bottom-quartile carriers replaced',owner:'Logistics',time:'Day 30-90'},
+    {id:'M5',title:'Seller SLA contractual penalties',det:'Codify graduated penalties: warning -> commission cut -> visibility downgrade -> suspension. Penalties triggered by Seller SLA, not Overall metrics.',kpi:'Seller SLA +7pp',owner:'Commercial + Legal',time:'Day 30-60'},
+    {id:'M6',title:'Reduce Operations Lead Time (Created -> Confirmed)',det:'Auto-confirm logic for verified sellers + SLA-driven escalation for laggards.',kpi:'Avg Ops LT -1 day',owner:'Tech + Vendor Ops',time:'Day 30-90'},
+    {id:'M7',title:'Underperforming region last-mile review',det:'Renegotiate carrier mix; introduce hub-spoke for top 3 underperforming regions. Use Closure Gap by region as the diagnostic.',kpi:'Region Overall GTN gap closes 50%',owner:'Logistics',time:'Day 30-90'},
+    {id:'M8',title:'Rebalance volume Overloaded -> Underutilized',det:'Shift 20-30% of '+od.sellers+' overloaded to '+un.sellers+' strong underutilized sellers.',kpi:'Seller SLA +4pp on rebalanced',owner:'Vendor Ops + Commercial',time:'Day 30-90'},
+    {id:'M9',title:'Return reason taxonomy + RCA loop',det:'Standardize return reasons; weekly RCA on top reasons; feed into seller scorecards.',kpi:'Return rate -1pp',owner:'QRR + Commercial',time:'Day 30-90'},
+  ];
+  const longActs = [
+    {id:'L1',title:'Dual-accountability framework (NEW)',det:'Split accountability cleanly: Vendor Ops owns Seller GTN; Logistics owns Closure Gap (Overall GTN minus Seller GTN). Targets, dashboards, and bonuses redesigned around the right metric per team.',kpi:'Clear owner per pp lost',owner:'Exec + Vendor Ops + Logistics',time:'Quarter +2'},
+    {id:'L2',title:'Module strategy review (MDS vs OCF vs FDS)',det:'Move volume per category into best-fit module; expand FDS for high-velocity SKUs.',kpi:'+3pp GTN, structural',owner:'Exec + Commercial',time:'Quarter +2'},
+    {id:'L3',title:'Seller incentive redesign tied to Seller GTN/Seller SLA',det:'Replace flat commission with performance-band commission rewarding Seller GTN/SLA outperformance. Sellers no longer punished for logistics issues outside their control.',kpi:'Seller GTN +3pp via behavior',owner:'Commercial + Finance',time:'Quarter +2'},
+    {id:'L4',title:'Predictive cancellation model',det:'ML at order placement (region+SKU+seller+payment); intervene with Prepaid prompt or pre-confirmation call.',kpi:'Cancel rate -3pp',owner:'Tech + Data',time:'Quarter +2/3'},
+    {id:'L5',title:'Vendor onboarding hardening',det:'New vendors gated through 30-day pilot with strict Seller SLA; automated fail-out criteria.',kpi:'-50% new-vendor reject rate',owner:'Vendor Ops + Seller Center',time:'Quarter +2'},
+    {id:'L6',title:'Logistics network redesign per region',det:'Open micro-fulfillment in worst regions; consolidate underused DCs.',kpi:'Region GTN parity',owner:'Logistics',time:'Quarter +3/4'},
+    {id:'L7',title:'Single source-of-truth Triple-View dashboard (Power BI)',det:'Live: Seller GTN | Overall GTN | Closure Gap per Seller/Module/Region/SKU/Material. Alert thresholds. Daily refresh.',kpi:'Decision velocity +50%',owner:'Tech + Vendor Ops',time:'Quarter +2'},
+  ];
+  function renderActions(id, list, cls){
+    $(id).innerHTML = list.map(function(a){
+      return '<div class="action-card '+cls+'"><div class="action-head"><span class="action-id">'+a.id+'</span><div class="action-title">'+a.title+'</div></div>'+
+        '<div class="action-detail">'+a.det+'</div>'+
+        '<div class="action-meta"><span><strong>KPI:</strong> '+a.kpi+'</span><span><strong>Owner:</strong> '+a.owner+'</span><span><strong>Timeline:</strong> '+a.time+'</span></div></div>';
+    }).join('');
+  }
+  renderActions('shortActions', shortActs, 'short');
+  renderActions('midActions', midActs, 'mid');
+  renderActions('longActions', longActs, 'long');
+
+  // Uplift
+  const total = D.headline.gmv_total;
+  // Closure gap = GMV that reached seller closure but never delivered (post-closure logistics loss)
+  const closureGap = (D.headline.gtn_seller - D.headline.gtn) / 100 * total;
+  const upRows = [
+    {lever:'Recover 40% of post-closure logistics loss (S1 + M2 + M3 + M4)', gmv:closureGap*0.40, pp:(closureGap*0.40/total*100)},
+    {lever:'Reduce cancellations 30% (S2 + S6 + L4)', gmv:D.headline.gmv_cancel*0.30, pp:(D.headline.gmv_cancel*0.30/total*100)},
+    {lever:'Reduce rejections 25% (S5 + M5 + L5)', gmv:D.headline.gmv_reject*0.25, pp:(D.headline.gmv_reject*0.25/total*100)},
+    {lever:'Reduce returns 20% (M9 + Tier 1 alloc)', gmv:D.headline.gmv_return*0.20, pp:(D.headline.gmv_return*0.20/total*100)},
+    {lever:'SLA-driven behavior change (5% of cancel+reject)', gmv:(D.headline.gmv_cancel+D.headline.gmv_reject)*0.05, pp:((D.headline.gmv_cancel+D.headline.gmv_reject)*0.05/total*100)},
+  ];
+  const upTotalGMV = upRows.reduce(function(a,r){return a+r.gmv},0);
+  const upTotalPP = upRows.reduce(function(a,r){return a+r.pp},0);
+  $('upliftTable').innerHTML = '<thead><tr><th>Lever</th><th class="num">Addressable GMV</th><th class="num">GTN Uplift (pp)</th></tr></thead><tbody>'+
+    upRows.map(function(r){return '<tr><td>'+r.lever+'</td><td class="num">'+fmtMoneyFull(r.gmv)+'</td><td class="num"><strong>+'+r.pp.toFixed(2)+'</strong></td></tr>';}).join('')+'</tbody>';
+  $('upliftTotal').innerHTML = '+'+upTotalPP.toFixed(2)+' pp &nbsp;<span style="font-size:13px;color:#065F46;font-weight:500">('+fmtMoneyFull(upTotalGMV)+' GMV)</span>';
+
+  // ------- Lazy chart loading via IntersectionObserver -------
+  const COLORS = {navy:'#0B1F3A',blue:'#1F6FEB',teal:'#0E76A8',green:'#16A34A',red:'#DC2626',amber:'#D97706',purple:'#8B5CF6'};
+
+  function buildChart(name, host){
+    if (typeof Chart === 'undefined') return false;
+    try{
+      // Replace skeleton with canvas
+      host.innerHTML = '<canvas></canvas>';
+      const ctx = host.querySelector('canvas');
+
+      const baseScale = {grid:{color:'#F1F5F9'}};
+      const noGrid = {grid:{display:false}};
+      const baseOpts = {responsive:true, maintainAspectRatio:false, animation:{duration:400},
+        plugins:{legend:{display:false}}, interaction:{mode:'index',intersect:false}};
+
+      if (name==='chGTN') new Chart(ctx,{type:'line',data:{labels:D.mom.months,datasets:[{label:'GTN %',data:D.mom.gtn,borderColor:COLORS.blue,backgroundColor:'rgba(31,111,235,.12)',fill:true,tension:.35,pointRadius:5,borderWidth:3}]},options:{...baseOpts, scales:{y:{min:60,max:80,...baseScale,title:{display:true,text:'GTN %'}},x:noGrid}}});
+      else if (name==='chDR') new Chart(ctx,{type:'line',data:{labels:D.mom.months,datasets:[{label:'DR %',data:D.mom.dr,borderColor:COLORS.green,backgroundColor:'rgba(22,163,74,.12)',fill:true,tension:.35,pointRadius:5,borderWidth:3}]},options:{...baseOpts, scales:{y:{min:65,max:85,...baseScale},x:noGrid}}});
+      else if (name==='chSLA') new Chart(ctx,{type:'line',data:{labels:D.mom.months,datasets:[{label:'SLA %',data:D.mom.sla,borderColor:COLORS.amber,backgroundColor:'rgba(217,119,6,.12)',fill:true,tension:.35,pointRadius:5,borderWidth:3}]},options:{...baseOpts, scales:{y:{min:60,max:90,...baseScale},x:noGrid}}});
+      else if (name==='chLoss') new Chart(ctx,{type:'bar',data:{labels:D.mom.months,datasets:[
+        {label:'Cancel %',data:D.mom.cancel_rate,backgroundColor:COLORS.red},
+        {label:'Reject %',data:D.mom.reject_rate,backgroundColor:COLORS.amber},
+        {label:'Return %',data:D.mom.return_rate,backgroundColor:COLORS.purple},
+      ]},options:{...baseOpts, plugins:{legend:{display:true,position:'bottom'}}, scales:{x:{stacked:true,...noGrid},y:{stacked:true,...baseScale}}}});
+      else if (name==='chModFunnel'){
+        const mf = ['MDS','OCF','FDS'].map(function(m){const x=D.module_funnel[m];return [x.placed,x.confirmed,x.rts,x.shipped,x.delivered].map(function(v){return v/x.placed*100});});
+        new Chart(ctx,{type:'bar',data:{labels:['Placed','Confirmed','RTS','Shipped/DC','Delivered'],datasets:['MDS','OCF','FDS'].map(function(m,i){return {label:m,data:mf[i],backgroundColor:[COLORS.blue,COLORS.green,COLORS.purple][i]};})},options:{...baseOpts, plugins:{legend:{display:true,position:'bottom'}}, scales:{y:{beginAtZero:true,max:100,...baseScale},x:noGrid}}});
+      }
+      else if (name==='chModGTN') new Chart(ctx,{type:'bar',data:{labels:D.module.map(function(m){return m.name}),datasets:[{data:D.module.map(function(m){return m.gtn}),backgroundColor:[COLORS.blue,COLORS.green,COLORS.purple]}]},options:{...baseOpts, indexAxis:'y', scales:{x:{beginAtZero:false,min:65,max:80,...baseScale},y:noGrid}}});
+      else if (name==='chModSLA') new Chart(ctx,{type:'bar',data:{labels:D.module.map(function(m){return m.name}),datasets:[{data:D.module.map(function(m){return m.sla}),backgroundColor:[COLORS.blue,COLORS.green,COLORS.purple]}]},options:{...baseOpts, indexAxis:'y', scales:{x:{beginAtZero:false,min:65,max:90,...baseScale},y:noGrid}}});
+      else if (name==='chModLT') new Chart(ctx,{type:'bar',data:{labels:D.module.map(function(m){return m.name}),datasets:[{data:D.module.map(function(m){return m.avg_seller_lt}),backgroundColor:[COLORS.blue,COLORS.green,COLORS.purple]}]},options:{...baseOpts, indexAxis:'y', scales:{x:{beginAtZero:true,...baseScale},y:noGrid}}});
+      else if (name==='chSLAImpact') new Chart(ctx,{type:'bar',data:{labels:D.sla_impact.map(function(s){return s.status}),datasets:[
+        {label:'GTN %',data:D.sla_impact.map(function(s){return s.gtn}),backgroundColor:COLORS.blue},
+        {label:'Cancel %',data:D.sla_impact.map(function(s){return s.cancel_rate}),backgroundColor:COLORS.red},
+        {label:'Return %',data:D.sla_impact.map(function(s){return s.return_rate}),backgroundColor:COLORS.amber},
+      ]},options:{...baseOpts, plugins:{legend:{display:true,position:'bottom'}}, scales:{y:{beginAtZero:true,...baseScale},x:noGrid}}});
+      else if (name==='chMaterial'){
+        const overall = D.headline.gtn;
+        // Filter out statistically thin materials (< 50 items) - keep chart meaningful
+        const visible = D.material.filter(function(m){return m.items >= 50}).slice().sort(function(a,b){return a.gtn - b.gtn});
+        const labels = visible.map(function(m){return m.name});
+        const vals = visible.map(function(m){return m.gtn});
+        const colors = visible.map(function(m){return m.gtn>=overall?COLORS.green:COLORS.red});
+        // Dynamic axis to fit the actual range with a 5pp pad
+        const minV = Math.max(0, Math.floor(Math.min.apply(null, vals)) - 5);
+        const maxV = Math.min(100, Math.ceil(Math.max.apply(null, vals)) + 5);
+        new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[{data:vals,backgroundColor:colors,borderRadius:3,barThickness:'flex',maxBarThickness:24}]},
+          options:{...baseOpts, indexAxis:'y',
+            plugins:{legend:{display:false},
+              tooltip:{callbacks:{label:function(c){const r=visible[c.dataIndex];return 'GTN '+r.gtn.toFixed(2)+'% | GMV '+fmtMoney(r.gmv)+' | '+fmtNum(r.items)+' items'}}},
+              datalabels:false},
+            scales:{
+              x:{beginAtZero:false,min:minV,max:maxV,...baseScale,title:{display:true,text:'GTN %'},ticks:{callback:function(v){return v+'%'}}},
+              y:{...noGrid,ticks:{font:{size:11}}}
+            }}});
+      }
+      else if (name==='chSkuDist'){
+        const labels = D.sku_gtn_distribution.map(function(b){return b.band});
+        const skuCounts = D.sku_gtn_distribution.map(function(b){return b.skus});
+        const bandColors = [COLORS.red,COLORS.amber,'#FBBF24',COLORS.teal,COLORS.green];
+        new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[{label:'# SKUs',data:skuCounts,backgroundColor:bandColors,borderRadius:4}]},
+          options:{...baseOpts,
+            plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){const b=D.sku_gtn_distribution[c.dataIndex];return b.skus+' SKUs | '+fmtMoney(b.gmv)+' GMV'}}}},
+            scales:{y:{beginAtZero:true,...baseScale,title:{display:true,text:'# SKUs'}},x:noGrid}}});
+      }
+            else if (name==='chCancel' || name==='chReject' || name==='chReturn'){
+        const items = name==='chCancel'?D.cancel_reasons : name==='chReject'?D.reject_reasons : D.return_reasons;
+        const color = name==='chCancel'?COLORS.red : name==='chReject'?COLORS.amber : COLORS.purple;
+        new Chart(ctx,{type:'bar',data:{labels:items.map(function(r){return r.reason.length>30?r.reason.substring(0,28)+'...':r.reason}),datasets:[{data:items.map(function(r){return r.pct}),backgroundColor:color,borderRadius:4}]},options:{...baseOpts, indexAxis:'y',
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return items[c.dataIndex].pct+'% ('+fmtMoney(items[c.dataIndex].gmv)+')'}}}},
+          scales:{x:{beginAtZero:true,...baseScale,title:{display:true,text:'% of GMV loss'}},y:noGrid}}});
+      }
+      return true;
+    }catch(e){
+      host.innerHTML = '<div class="err">Chart error: '+e.message+'</div>';
+      return false;
+    }
+  }
+
+  function initLazyCharts(){
+    const hosts = document.querySelectorAll('[data-chart]');
+    if (typeof IntersectionObserver === 'undefined'){
+      // Fallback: build all
+      hosts.forEach(function(h){buildChart(h.getAttribute('data-chart'), h)});
+      return;
+    }
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting){
+          const h = en.target;
+          buildChart(h.getAttribute('data-chart'), h);
+          io.unobserve(h);
+        }
+      });
+    },{rootMargin:'150px 0px',threshold:0.01});
+    hosts.forEach(function(h){io.observe(h)});
+  }
+
+  // Load Chart.js then init lazy charts
+  function loadChartJS(cb){
+    if (typeof Chart !== 'undefined'){cb(); return;}
+    const cdns = [
+      'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js',
+      'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js'
+    ];
+    let i = 0;
+    function tryLoad(){
+      if (i >= cdns.length){
+        document.querySelectorAll('[data-chart]').forEach(function(h){h.innerHTML='<div class="err">Chart library failed to load from all sources. Check internet/firewall.</div>'});
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = cdns[i++];
+      s.async = true;
+      s.onload = cb;
+      s.onerror = function(){tryLoad()};
+      document.head.appendChild(s);
+    }
+    tryLoad();
+  }
+
+  // ------- Throttled scrollspy with explicit section list -------
+  const SECTIONS = ['sec-exec','sec-trends','sec-funnel','sec-modules','sec-sla','sec-loss','sec-region','sec-sellers','sec-material','sec-sku','sec-skusla','sec-actions','sec-guide'];
+  const navLinks = Array.from(document.querySelectorAll('#topNav a'));
+  let scheduled = false;
+  function updateNav(){
+    scheduled = false;
+    let cur = SECTIONS[0];
+    for (let i=0;i<SECTIONS.length;i++){
+      const el = $(SECTIONS[i]);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.top <= 140) cur = SECTIONS[i];
+    }
+    navLinks.forEach(function(l){
+      l.classList.toggle('active', l.getAttribute('href') === '#'+cur);
+    });
+  }
+  window.addEventListener('scroll', function(){
+    if (!scheduled){scheduled = true; requestAnimationFrame(updateNav);}
+  }, {passive:true});
+
+  // Init: charts after Chart.js is loaded
+  loadChartJS(function(){
+    // Defer to next idle frame so initial render is smooth
+    if (typeof requestIdleCallback === 'function'){
+      requestIdleCallback(initLazyCharts, {timeout:600});
+    } else {
+      setTimeout(initLazyCharts, 50);
+    }
+  });
+})();
+</script>
+</body>
+</html>
